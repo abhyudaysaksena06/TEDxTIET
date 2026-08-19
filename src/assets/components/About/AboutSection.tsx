@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-// @ts-expect-error — About is untyped JSX ported from the sibling project
 import About, { ABOUT_SECTIONS } from "./About";
 import useScrollProgress from "../../hooks/useScrollProgress";
 

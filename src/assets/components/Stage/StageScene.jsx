@@ -21,7 +21,8 @@ import fontJson from './helvetiker_bold.typeface.json'
  * pinned to `{ x, y }` every frame — used once the user starts scrolling, so the
  * logo settles into a fixed pose instead of continuing to react to the pointer.
  */
-function StageScene({ idleRef, frozenRef }) {
+/** @param {{ idleRef?: any, frozenRef?: any }} props */
+function StageScene({ idleRef, frozenRef } = {}) {
   const mountRef = useRef(null)
 
   useEffect(() => {

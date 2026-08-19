@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import "./Reveal.css";
 
-const Reveal = ({ onFinish }) => {
+/** @param {{ onFinish?: () => void }} props */
+const Reveal = ({ onFinish } = {}) => {
   useEffect(() => {
     // Match animation time (1.2s)
     const timer = setTimeout(() => {

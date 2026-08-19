@@ -9,25 +9,15 @@ import RegistrationSection from './components/RegistrationSection';
 import AboutSection from './components/About/AboutSection';
 import ImpactSection from './components/Impact/ImpactSection';
 import Footer from './components/Footer';
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-expect-error — ported JSX page, untyped
 import RegistrationPage from './components/Registration/RegistrationPage';
 // Pages ported from TEDxTIET1/TEDxTIET26-27 (src/Components/*). Home stays ours.
-// @ts-expect-error — ported JSX, untyped
 import GalleryPage from './pages/infiniteGallery';
-// @ts-expect-error — ported JSX, untyped
 import SpeakersPage from './pages/Speaker';
-// @ts-expect-error — ported JSX, untyped
 import TeamPage from './pages/Team';
-// @ts-expect-error — ported JSX, untyped
 import AlumniPage from './pages/alumni';
-// @ts-expect-error — ported JSX, untyped
 import EventPage from './pages/Event';
-// @ts-expect-error — ported JSX, untyped
 import ContactPage from './pages/ContactForm';
-// @ts-expect-error — ported JSX, untyped
 import NotFoundPage from './pages/NotFound';
-// @ts-expect-error — ported JSX, untyped
 import Reveal from './components/Reveal';
 
 /** Ported pages sit under the fixed navbar, so they need clearance at the top. */

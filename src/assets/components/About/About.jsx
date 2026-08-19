@@ -113,6 +113,7 @@ export { ABOUT_SECTIONS };
  * supplied the internal wheel/touch/key hijacking is switched off, since the
  * parent's scroll track is doing that job instead.
  */
+/** @param {{ controlledSection?: number|null }} props */
 export default function About({ controlledSection = null }) {
   const isControlled = controlledSection !== null;
   const [uncontrolledSection, setActiveSection] = useState(0);

@@ -24,3 +24,6 @@ yarn-error.log*
 
 # local env (holds Supabase keys)
 .env
+
+# build output
+/dist
