@@ -1,0 +1,377 @@
+/*
+  About.css
+  --------------------------------------------------------------------------
+  This file intentionally does NOT contain layout, spacing, sizing,
+  typography, or plain color rules — those all live as Tailwind utility
+  classes directly in About.jsx.
+
+  What stays here, and why:
+    - .about-stage              → 3-stop gradient background
+    - .about-stage::before/after → ambient glow + drifting particles/lines
+                                    (pseudo-elements + gradients + keyframes)
+    - .about-inner::before/after → oversized background typography
+                                    (pseudo-elements)
+    - .timeline::before          → oversized background typography
+                                    (pseudo-element)
+    - .timeline__rail-fill       → gradient fill bar
+    - .timeline__node-ring       → pulsing glow (keyframe)
+    - .timeline__node.is-active  → multi-layer glow box-shadow
+    - .content-card-stage::before/after → floating dots + drifting spotlight
+                                    (pseudo-elements + keyframes)
+    - .content-card              → glassmorphism (backdrop-filter + layered
+                                    box-shadow + translucent background)
+    - .content-card__watermark   → gradient-clip-text "engraved" numeral
+    - .about-scroll-chevron      → CSS-drawn arrow + bounce keyframe
+    - @keyframes                 → every animation used above
+  --------------------------------------------------------------------------
+*/
+
+/* ---------------------------------------------------------------------- */
+/* Design tokens — only the ones still consumed below                     */
+/* ---------------------------------------------------------------------- */
+
+:root {
+  --tedx-red: #e62b1e;
+  --tedx-red-deep: #a3160d;
+
+  --tedx-stage-bg-top: #090909;
+  --tedx-stage-bg-mid: #111111;
+  --tedx-stage-bg-bottom: #0b0b0b;
+
+  --tedx-card-bg: rgba(20, 20, 20, 0.95);
+  --tedx-card-border: rgba(255, 255, 255, 0.08);
+
+  --tedx-watermark-top: #2a2a2a;
+  --tedx-watermark-bottom: #141414;
+  --tedx-bg-type: rgba(255, 255, 255, 0.025);
+
+  --tedx-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Symmetric ease-in-out (sine) — no fast launch, near-constant mid-travel. */
+  --tedx-rail-ease: cubic-bezier(0.37, 0, 0.63, 1);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Stage background — gradient only (position/size/overflow are Tailwind) */
+/* ---------------------------------------------------------------------- */
+
+.about-stage {
+  background: linear-gradient(
+    180deg,
+    var(--tedx-stage-bg-top) 0%,
+    var(--tedx-stage-bg-mid) 40%,
+    var(--tedx-stage-bg-bottom) 100%
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Background — ambient glow + thin lines (::before), drifting particles  */
+/* and tiny dots (::after). Both pseudo-elements, both animated slowly.   */
+/* ---------------------------------------------------------------------- */
+
+.about-stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+
+    background-image:
+        radial-gradient(circle, rgba(230,43,30,.50) 2px, transparent 2.8px),
+        radial-gradient(circle, rgba(230,43,30,.35) 2.5px, transparent 3.5px),
+        radial-gradient(circle, rgba(255,255,255,.18) 1.5px, transparent 2.5px);
+
+    background-size:
+        180px 180px,
+        260px 260px,
+        140px 140px;
+
+    background-position:
+        0 0,
+        90px 120px,
+        40px 60px;
+
+    opacity:1;
+
+    animation:floatingParticles 25s linear infinite;
+}
+
+@keyframes floatingParticles{
+
+    0%{
+        transform:translateY(0) translateX(0);
+    }
+
+    50%{
+        transform:translateY(-15px) translateX(8px);
+    }
+
+    100%{
+        transform:translateY(0) translateX(0);
+    }
+
+}
+
+.about-stage::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+
+    background:
+        radial-gradient(circle at 20% 30%, rgba(230,43,30,.06), transparent 18%),
+        radial-gradient(circle at 80% 70%, rgba(230,43,30,.05), transparent 20%),
+        radial-gradient(circle at 55% 45%, rgba(230,43,30,.04), transparent 15%);
+
+    filter:blur(70px);
+}
+
+@keyframes about-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-1.5%, 1%, 0) scale(1.02);
+  }
+}
+
+@keyframes about-float {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-0.8%, -1.2%, 0);
+  }
+  100% {
+    transform: translate3d(1%, 0.6%, 0);
+  }
+}
+
+/* Oversized outlined background typography — Apple-keynote-style large   */
+/* words sitting far behind the content, never competing with it.        */
+.about-inner::before,
+.about-inner::after {
+  content: "IDEAS";
+  position: absolute;
+  z-index: -1;
+  font-family: "Big Shoulders Display", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--tedx-bg-type);
+  pointer-events: none;
+  user-select: none;
+}
+
+.about-inner::before {
+  content: "IDEAS";
+  top: 4%;
+  left: 4%;
+  font-size: clamp(6rem, 14vw, 13rem);
+}
+
+.about-inner::after {
+  content: "DISCOVER";
+  bottom: -4%;
+  right: 2%;
+  font-size: clamp(6rem, 16vw, 15rem);
+}
+
+.timeline::before {
+  content: "INSPIRE";
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: -2.5rem;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: left center;
+  font-family: "Big Shoulders Display", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  font-size: clamp(3.5rem, 7vw, 6rem);
+  color: transparent;
+  -webkit-text-stroke: 1px var(--tedx-bg-type);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Timeline — gradient fill bar, pulsing ring, active-node glow           */
+/* ---------------------------------------------------------------------- */
+
+/* Height is set inline from the measured node centres (see About.jsx); this
+   transition is what makes the fill travel between dots instead of jumping.
+
+   The easing is deliberately symmetric rather than the --tedx-ease used
+   elsewhere: an ease-out curve starts at full speed, which reads as a lurch
+   on a bar that is meant to look like it is travelling. This one eases in
+   and out around a near-constant middle, so the fill sets off gently, crosses
+   the gap at a steady rate, and settles onto the next dot.
+
+   --rail-duration is set inline per transition and scales with how many dots
+   are being crossed, keeping the travel speed the same for a 1- or 2-step
+   jump. */
+.timeline__rail-fill {
+  background: linear-gradient(var(--tedx-red), var(--tedx-red-deep));
+  transition: height var(--rail-duration, 0.75s) var(--tedx-rail-ease);
+  will-change: height;
+}
+
+.timeline__node-ring {
+  animation: timeline-pulse 2.2s var(--tedx-ease) infinite;
+}
+
+.timeline__node.is-active {
+  box-shadow: 0 0 0 4px var(--tedx-stage-bg-bottom), 0 0 16px 3px rgba(230, 43, 30, 0.55);
+}
+
+@keyframes timeline-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Content card stage — tiny floating dots + drifting red spotlight       */
+/* behind the active card, both pseudo-elements.                          */
+/* ---------------------------------------------------------------------- */
+
+.content-card-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -20% -10%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(230, 43, 30, 0.6) 0%, transparent 70%) 20% 15% / 0.6% 1% no-repeat,
+    radial-gradient(circle, rgba(230, 43, 30, 0.5) 0%, transparent 70%) 85% 25% / 0.5% 0.8% no-repeat,
+    radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%) 10% 80% / 0.5% 0.8% no-repeat,
+    radial-gradient(circle, rgba(230, 43, 30, 0.45) 0%, transparent 70%) 92% 78% / 0.5% 0.9% no-repeat,
+    radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%) 55% 8% / 0.4% 0.6% no-repeat;
+  animation: about-float 18s ease-in-out infinite alternate;
+}
+
+.content-card-stage::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(230, 43, 30, 0.16), transparent 55%);
+  filter: blur(30px);
+  animation: about-spotlight 16s ease-in-out infinite alternate;
+}
+
+@keyframes about-spotlight {
+  0% {
+    transform: translate3d(-10px, -6px, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(8px, 6px, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-6px, 10px, 0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Content card — glassmorphism                                           */
+/* ---------------------------------------------------------------------- */
+
+.content-card {
+  background: var(--tedx-card-bg);
+  border: 1px solid var(--tedx-card-border);
+  backdrop-filter: blur(32px) saturate(120%);
+  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45), 0 0 60px -12px rgba(230, 43, 30, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 40px 60px -40px rgba(230, 43, 30, 0.06), inset 0 -30px 50px -30px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Watermark — engraved gradient-clip-text numeral                        */
+/* ---------------------------------------------------------------------- */
+
+.content-card__watermark {
+  position: absolute;
+  top: -1rem;
+  right: 2rem;
+
+  font-family: var(--tedx-font-display);
+  font-size: clamp(90px, 13vw, 180px);
+  font-weight: 900;
+  line-height: 1;
+
+  color: rgba(255,255,255,0.035);
+
+  -webkit-text-stroke: 0;
+
+  user-select: none;
+  pointer-events: none;
+
+  z-index: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Scroll hint chevron — CSS-drawn arrow + bounce                         */
+/* ---------------------------------------------------------------------- */
+
+.about-scroll-chevron {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid var(--tedx-red);
+  border-bottom: 2px solid var(--tedx-red);
+  transform: rotate(45deg);
+  animation: about-bounce 1.6s ease-in-out infinite;
+}
+
+@keyframes about-bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(45deg);
+  }
+  50% {
+    transform: translateY(6px) rotate(45deg);
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Reduced motion + mobile pseudo-content overrides                       */
+/* (all other responsive behavior is handled by Tailwind's md: prefix     */
+/* directly in About.jsx — this file only handles what Tailwind can't:    */
+/* disabling keyframe animations and removing generated pseudo-content.)  */
+/* ---------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .about-scroll-chevron,
+  .timeline__node-ring,
+  .about-stage::before,
+  .about-stage::after,
+  .content-card-stage::before,
+  .content-card-stage::after {
+    animation: none;
+  }
+
+  .timeline__rail-fill {
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-inner::before,
+  .about-inner::after,
+  .timeline::before {
+    content: none;
+  }
+}

@@ -1,6 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
+
+/* Tokens the ported About section relies on (it was authored against a Tailwind
+   v3 config; these are the v4 CSS-first equivalents). */
+@theme {
+    --color-tedx-red: #e62b1e;
+    --color-tedx-reddeep: #a3160d;
+    --font-display: "Big Shoulders Display", sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
 
 body {
     background-color: #000000;
     font-family: 'Anton', sans-serif;
+    /* NOTE: never set overflow-x here — any overflow value on html/body makes it
+       a scroll container and silently breaks `position: sticky` on the hero. */
+    scrollbar-width: none;      /* Firefox */
+    -ms-overflow-style: none;   /* legacy Edge/IE */
+}
+
+html {
+    scrollbar-width: none;
+}
+
+body::-webkit-scrollbar,
+html::-webkit-scrollbar {
+    display: none;              /* Chrome, Safari, new Edge */
+    width: 0;
+    height: 0;
 }

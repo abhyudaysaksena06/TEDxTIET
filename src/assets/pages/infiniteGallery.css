@@ -1,0 +1,91 @@
+/* Infinite Gallery Component Styles */
+
+/* Global styles to remove white borders */
+* {
+  /* margin: 0; */
+  /* padding: 0; */
+  box-sizing: border-box;
+}
+
+html, body {
+  /* margin: 0; */
+  /* padding: 0; */
+  background-color: black;
+  /* overflow: hidden; */
+}
+
+#root {
+  /* margin: 0; */
+  /* padding: 0; */
+  background-color: black;
+}
+
+.App {
+  margin: 0;
+  padding: 0;
+  background-color: black;
+}
+
+.gallery-container {
+  height: 100vh;
+  width: 100vw;
+  background-color: black;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.gallery-content {
+  display: flex;
+  padding: 1.5rem;
+  height: 100%;
+  width: 100%;
+  will-change: transform;
+  margin: 0;
+  background-color: black;
+}
+
+.gallery-column {
+  flex: 1;
+}
+
+.gallery-column-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  will-change: transform;
+}
+
+.gallery-item {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  height: 18rem; /* h-72 equivalent */
+  flex-shrink: 0;
+}
+
+.gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  border: none;
+  outline: none;
+  display: block;
+}
+
+/* Responsive image positioning */
+@media (min-width: 640px) {
+  .gallery-image {
+    object-position: top;
+  }
+}
+
+/* Mobile breakpoint detection */
+@media (max-width: 639px) {
+  .gallery-container {
+    /* Mobile-specific styles if needed */
+  }
+}

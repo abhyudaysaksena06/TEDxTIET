@@ -1,0 +1,59 @@
+.reveal-div{
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.reveal-container {
+  position: relative;
+  display: inline-block; /* container wraps text width */
+  overflow: hidden;
+}
+
+.reveal-text {
+  font-size: 4rem;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  color: white;
+  position: relative;
+  transform: translateY(100%);
+  animation: revealUp 1.2s ease-out forwards;
+  z-index:2;
+}
+
+/* Bar now only spans text container */
+.reveal-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;   /* just text width */
+  background: red;
+  transform: translateX(-100%);
+  animation: sweep 1s ease-out forwards;
+  z-index: 1; /* above text until it moves out */
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes revealUp {
+  0% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(0%);
+  }
+}

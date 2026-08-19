@@ -1,15 +1,31 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
 const navLinks = [
-    { title: "Events", href: "/" },
-    { title: "Team", href: "/" },
-    { title: "Contact Us", href: "/" },
-    { title: "About", href: "/" },
+    { title: "Home", href: "/home" },
+    { title: "Gallery", href: "/gallery" },
+    { title: "Team", href: "/team" },
+    { title: "Speakers", href: "/speakers" },
+    { title: "Alumni", href: "/alumni" },
 ];
+
+/** "/" and "/home" are the same destination, so treat them as one. */
+function normalizePath(path: string) {
+    const clean = path.replace(/\/+$/, "");
+    return clean === "" ? "/home" : clean;
+}
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+
+    // don't offer a link to the page the user is already on. useLocation (not
+    // window.location) so this re-evaluates on client-side navigation.
+    const currentPath = normalizePath(useLocation().pathname);
+    const visibleLinks = navLinks.filter((link) => link.href !== currentPath);
+
+    // pages whose content runs bright/photographic right under the navbar
+    const needsScrim = ["/gallery", "/team", "/alumni"].includes(currentPath);
 
     // Animation variants for the background bars
     const barVariants: Variants = {
@@ -54,8 +70,23 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="flex justify-between items-center relative z-50">
-            <div className="text-2xl font-bold tracking-tighter text-[#eb0028]">TEDxTIET</div>
+        // fixed, so the wordmark and hamburger stay reachable on every section.
+        // A soft blurred scrim sits behind it on image-heavy pages (gallery, team)
+        // where the wordmark would otherwise disappear into the photos.
+        <nav
+            className={`fixed top-0 inset-x-0 flex justify-between items-center z-[9999] px-8 md:px-12 pt-6 pb-4 ${
+                needsScrim && !isOpen
+                    ? "bg-gradient-to-b from-black/85 via-black/55 to-transparent backdrop-blur-md"
+                    : ""
+            }`}
+        >
+            <Link
+                to="/"
+                aria-label="TEDxTIET home"
+                className="text-2xl font-bold tracking-tighter text-[#eb0028] transition-opacity hover:opacity-80"
+            >
+                TEDxTIET
+            </Link>
 
             {/* Animated Hamburger Icon */}
             <div
@@ -64,11 +95,11 @@ export default function Navbar() {
             >
                 <motion.div
                     animate={isOpen ? { rotate: 45, y: 4, width: "30px" } : { rotate: 0, y: 0, width: "30px" }}
-                    className="h-[2px] bg-white group-hover:bg-[#eb0028] transition-colors origin-center"
+                    className={`h-[2px] transition-colors origin-center ${isOpen ? "bg-black" : "bg-white group-hover:bg-[#eb0028]"}`}
                 />
                 <motion.div
                     animate={isOpen ? { rotate: -45, y: -4, width: "30px" } : { rotate: 0, y: 0, width: "20px" }}
-                    className="h-[2px] bg-white group-hover:bg-[#eb0028] transition-colors origin-center"
+                    className={`h-[2px] transition-colors origin-center ${isOpen ? "bg-black" : "bg-white group-hover:bg-[#eb0028]"}`}
                 />
             </div>
 
@@ -91,18 +122,19 @@ export default function Navbar() {
                         ))}
 
                         {/* Links Overlay */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto">
+                        <div className="absolute inset-0 flex flex-col items-start justify-center pointer-events-auto pl-[6vw]">
                             <div className="flex flex-col gap-4">
-                                {navLinks.map((link, i) => (
+                                {visibleLinks.map((link, i) => (
                                     <div key={i} className="overflow-hidden">
-                                        <motion.a
-                                            href={link.href}
-                                            custom={i}
-                                            variants={linkVariants}
-                                            className="text-[6vw] font-bold uppercase leading-tight text-white hover:italic transition-all duration-300 block"
-                                        >
-                                            {link.title}
-                                        </motion.a>
+                                        <motion.div custom={i} variants={linkVariants}>
+                                            <Link
+                                                to={link.href}
+                                                onClick={() => setIsOpen(false)}
+                                                className="text-[6vw] font-bold uppercase leading-tight text-white hover:text-black transition-all duration-300 block text-left"
+                                            >
+                                                {link.title}
+                                            </Link>
+                                        </motion.div>
                                     </div>
                                 ))}
                             </div>
