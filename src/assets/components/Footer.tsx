@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 /**
- * Footer — layout and typography follow the Enactus reference: a left CTA block
- * with a newsletter capture, right-hand link columns, a divider, then a social
- * row + copyright, closing on an oversized wordmark bled off the bottom edge.
+ * Footer — structured after mrdev4u.com: a row of oversized destinations, a
+ * display statement with the social stack opposite, a ruled contact line, then
+ * a giant wordmark bled off the bottom edge above a thin credit bar.
  *
- * Link targets and social accounts come from the TEDxTIET26-27 repo
- * (src/Components/Footer.jsx and src/App.js routes).
+ * Display type is Anton (the hero face) against a faint grid; supporting text
+ * is mono at small sizes, which is what gives the reference its contrast
+ * between huge and tiny with nothing in between.
+ *
+ * Link targets and social accounts come from the TEDxTIET26-27 repo.
  */
 
 /**
@@ -66,14 +69,6 @@ function WordmarkReveal({ text }: { text: string }) {
     );
 }
 
-const NAVIGATE = [
-    { label: "Home", href: "/home" },
-    { label: "About Us", href: "/aboutus" },
-    { label: "Speakers", href: "/speakers" },
-    { label: "Team", href: "/team" },
-    { label: "Alumni", href: "/alumni" },
-];
-
 const SOCIALS = [
     {
         label: "LinkedIn",
@@ -97,98 +92,121 @@ const SOCIALS = [
     },
 ];
 
-function LinkList({ links }: { links: { label: string; href: string }[] }) {
-    return (
-        <ul className="space-y-3">
-            {links.map((link) => (
-                <li key={link.label}>
-                    <Link
-                        to={link.href}
-                        className="text-[15px] text-white/70 transition-colors duration-200 hover:text-white"
-                    >
-                        {link.label}
-                    </Link>
-                </li>
-            ))}
-        </ul>
-    );
-}
 
 /** Two columns: the heading sits over the first, the overflow fills the second. */
-function NavColumns({ title, links }: { title: string; links: { label: string; href: string }[] }) {
-    const first = links.slice(0, 3);
-    const second = links.slice(3);
 
-    return (
-        <div className="flex gap-10 sm:gap-14">
-            <div>
-                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-tedx-red">
-                    {title}
-                </p>
-                <div className="mt-5">
-                    <LinkList links={first} />
-                </div>
-            </div>
-            {/* spacer matches the heading's height so both lists start on the same line */}
-            <div>
-                <p aria-hidden="true" className="font-mono text-[11px] invisible">
-                    .
-                </p>
-                <div className="mt-5">
-                    <LinkList links={second} />
-                </div>
-            </div>
-        </div>
-    );
-}
+/** the three places worth sending someone from the bottom of the page */
+const BIG_LINKS = [
+    { label: "Team", href: "/team" },
+    { label: "Gallery", href: "/gallery" },
+    { label: "Contact", href: "/contact" },
+];
 
 export default function Footer() {
     return (
-        <footer className="relative w-full overflow-hidden bg-black pt-4 font-body text-white">
-            <div className="mx-auto max-w-[1400px] px-6 md:px-10">
-                {/* socials + contact CTA + copyright */}
-                <div className="flex flex-col items-center gap-6 py-8 sm:flex-row sm:justify-between">
-                    <div className="flex flex-wrap items-center gap-3">
-                        {SOCIALS.map((social) => (
-                            <a
-                                key={social.label}
-                                href={social.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                aria-label={`TEDxTIET on ${social.label}`}
-                                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/70 transition-colors duration-300 hover:border-tedx-red hover:bg-tedx-red hover:text-white"
-                            >
-                                <svg viewBox="0 0 24 24" fill="currentColor" className="h-[18px] w-[18px]">
-                                    <path d={social.path} />
-                                </svg>
-                            </a>
-                        ))}
+        <footer className="relative w-full overflow-hidden bg-[#0b0b0b] font-body text-[#ebe9e4]">
+            {/* faint grid, so the big type sits on a surface rather than a void */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                style={{
+                    backgroundImage:
+                        "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+                    backgroundSize: "120px 120px",
+                }}
+            />
+
+            <div className="relative mx-auto max-w-[1500px] px-6 pt-16 md:px-10">
+                {/* ---- oversized destinations ---- */}
+                <ul className="grid list-none grid-cols-1 gap-8 border-b border-white/10 pb-12 sm:grid-cols-3 sm:gap-10">
+                    {BIG_LINKS.map((l) => (
+                        <li key={l.label} className="min-w-0">
+                            <Link to={l.href} className="group block min-w-0">
+                                <span className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">
+                                    {l.href}
+                                    <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                                        ↗
+                                    </span>
+                                </span>
+                                <span className="block truncate font-['Anton'] text-[clamp(2.25rem,5.2vw,4.25rem)] uppercase leading-[0.9] tracking-[0.005em] text-[#ebe9e4] transition-colors duration-300 group-hover:text-tedx-red">
+                                    {l.label}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+
+                {/* ---- statement + follow ---- */}
+                <div className="flex flex-col gap-12 pt-14 lg:flex-row lg:justify-between lg:gap-16">
+                    <h2 className="font-['Anton'] text-[clamp(2.5rem,8vw,5.5rem)] uppercase leading-[0.92] tracking-[0.005em] text-[#ebe9e4]">
+                        Ideas worth
+                        <br />
+                        spreading,
+                        <br />
+                        <span className="text-tedx-red">on stage.</span>
+                    </h2>
+
+                    <div className="lg:text-right">
+                        <p className="font-mono text-[12px] uppercase tracking-[0.25em] text-white/40">
+                            Follow
+                        </p>
+                        <ul className="mt-4 list-none space-y-1">
+                            {SOCIALS.map((social) => (
+                                <li key={social.label}>
+                                    <a
+                                        href={social.href}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="group inline-flex items-center gap-2 font-['Anton'] text-[clamp(1.35rem,2.6vw,1.9rem)] uppercase tracking-[0.01em] text-[#a9a7a2] transition-colors duration-300 hover:text-[#ebe9e4]"
+                                    >
+                                        {social.label}
+                                        <span aria-hidden="true" className="text-[0.7em] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                                            ↗
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
 
                         <Link
-                            to="/contact"
-                            className="group ml-1 inline-flex items-center gap-2 rounded-full border border-tedx-red px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-tedx-red transition-colors duration-300 hover:bg-tedx-red hover:text-white"
+                            to="/register"
+                            className="mt-8 inline-flex items-center gap-2 rounded-full bg-tedx-red px-5 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors duration-300 hover:bg-white hover:text-black"
                         >
-                            Contact Us
-                            <span className="transition-transform duration-300 group-hover:translate-x-1">
-                                →
-                            </span>
+                            <span aria-hidden="true" className="text-[0.8em]">●</span>
+                            Registrations Open
                         </Link>
                     </div>
-
-                    <p className="text-center text-sm text-white/45 sm:text-right">
-                        © {new Date().getFullYear()} TEDxTIET · This independent TEDx event is
-                        operated under license from TED.
-                    </p>
                 </div>
+
+                {/* ---- contact rule ---- */}
+                <a
+                    href="mailto:tedxtiet@thapar.edu"
+                    className="group mt-16 flex items-center justify-between gap-6 border-t border-white/10 pt-5 font-mono text-[11px] uppercase tracking-[0.22em] text-white/45 transition-colors duration-300 hover:text-[#ebe9e4]"
+                >
+                    <span>Email</span>
+                    <span className="flex items-center gap-2 truncate">
+                        tedxtiet@thapar.edu
+                        <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
+                            →
+                        </span>
+                    </span>
+                </a>
             </div>
 
-            {/* oversized wordmark, bled off the bottom edge, with the nav sitting
-                in the space its shorter final letters leave on the right */}
-            <div className="flex items-end justify-between gap-8 pl-6 md:pl-14 pr-6 md:pr-12">
+            {/* ---- giant wordmark, bled off the bottom ---- */}
+            <div className="relative">
                 <WordmarkReveal text="TEDxTIET" />
-                <div className="shrink-0 pb-10 md:pb-14 pr-4 md:pr-16">
-                    <NavColumns title="Navigate" links={NAVIGATE} />
-                </div>
+            </div>
+
+            {/* ---- bottom bar ---- */}
+            <div className="relative mx-auto flex max-w-[1500px] flex-col gap-3 px-6 pb-6 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35 sm:flex-row sm:items-center sm:justify-between md:px-10">
+                <p>Independently organised · Thapar Institute, Patiala</p>
+                <p className="flex items-center gap-4">
+                    <span>© {new Date().getFullYear()} TEDxTIET</span>
+                    <a href="#top" className="transition-colors duration-300 hover:text-[#ebe9e4]">
+                        Back to top ↑
+                    </a>
+                </p>
             </div>
         </footer>
     );

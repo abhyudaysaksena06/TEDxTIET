@@ -109,9 +109,25 @@ interface Link {
     maxLife: number;
 }
 
-export default function SphereGallery() {
+interface GalleryProps {
+    /** fills the viewport with just the globe — used for the /gallery route */
+    fullPage?: boolean;
+}
+
+export default function SphereGallery({ fullPage = false }: GalleryProps) {
     const mountRef = useRef<HTMLDivElement>(null);
     const isPhone = useIsPhone();
+
+    // the globe owns the viewport on its own page; stop the document scrolling
+    // underneath it so the wheel only ever drives zoom
+    useEffect(() => {
+        if (!fullPage) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    }, [fullPage]);
 
     useEffect(() => {
         const mount = mountRef.current;
@@ -295,6 +311,19 @@ export default function SphereGallery() {
         canvas.style.cursor = "grab";
         canvas.style.touchAction = "none";
 
+        // ---------- wheel zoom ----------
+        // multiplies the resting camera distance. preventDefault stops the page
+        // scrolling behind the canvas while the pointer is over the globe.
+        const ZOOM_MIN = 0.45;
+        const ZOOM_MAX = 1.9;
+        let zoom = 1;
+        const onWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const step = e.deltaMode === 1 ? e.deltaY * 18 : e.deltaY; // lines vs pixels
+            zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * Math.exp(step * 0.0012)));
+        };
+        canvas.addEventListener("wheel", onWheel, { passive: false });
+
         const spinEuler = new THREE.Euler();
         const spinQuat = new THREE.Quaternion();
         const applySpin = (rx: number, ry: number) => {
@@ -442,7 +471,7 @@ export default function SphereGallery() {
             lift += (targetLift - lift) * Math.min(1, dt * 5);
             world.position.y = lift;
 
-            const camTarget = focused ? CAM_NEAR : CAM_FAR;
+            const camTarget = (focused ? CAM_NEAR : CAM_FAR) * zoom;
             camera.position.z += (camTarget - camera.position.z) * Math.min(1, dt * 3.2);
 
             const hovered = (() => {
@@ -514,6 +543,7 @@ export default function SphereGallery() {
             io.disconnect();
             window.removeEventListener("resize", onResize);
             window.removeEventListener("keydown", onKey);
+            canvas.removeEventListener("wheel", onWheel);
             canvas.removeEventListener("pointerdown", onDown);
             canvas.removeEventListener("pointermove", onMove);
             canvas.removeEventListener("pointerup", onUp);
@@ -526,6 +556,27 @@ export default function SphereGallery() {
             if (canvas.parentNode === mount) mount.removeChild(canvas);
         };
     }, [isPhone]);
+
+    // On its own page the globe IS the page: no header, no padding, full
+    // viewport. Embedded elsewhere it keeps the titled section treatment.
+    if (fullPage) {
+        return (
+            <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(45% 50% at 50% 50%, rgba(235,0,40,0.18) 0%, rgba(0,0,0,0) 70%)",
+                    }}
+                />
+                <div ref={mountRef} className="h-full w-full select-none" />
+                <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center font-mono text-[10px] tracking-[0.3em] uppercase text-white/35">
+                    Drag to spin · Scroll to zoom · Tap a frame
+                </p>
+            </div>
+        );
+    }
 
     return (
         <section className="relative w-full bg-black py-20 md:py-24 font-body overflow-hidden">

@@ -1,33 +1,41 @@
-// Traces the curved projection-screen border, smoothed through the exact
-// keystone points marked on the venue photo (see conversation for source data).
+// Traces the curved projection-screen border of HOME_BG.webp.
+//
+// These points are MEASURED FROM THE IMAGE, not eyeballed: the screen's neon
+// frame is the only strongly-red thing in that band, so the edges were found by
+// scanning each column of the decoded bitmap for red pixels and taking the top
+// and bottom runs. Coordinates are percentages of the FULL image (1375x768),
+// which is the space the hero stage renders them in.
+//
+// The earlier hand-dragged values were percentages of the cropped container,
+// so they drifted as soon as the outline was mapped onto the image itself.
 export const TOP: [number, number][] = [
-    [8.166667, 13.180199],
-    [17.666666, 14.249391],
-    [28.527779, 15.709754],
-    [38.916668, 16.579017],
-    [46.277779, 16.891952],
-    [52.069444, 16.891952],
-    [58.930558, 16.370394],
-    [65.388891, 16.379087],
-    [72.888887, 15.683677],
-    [79.305556, 14.840491],
-    [85.819448, 13.832146],
-    [93.555561, 12.902033],
+    [10.8364, 24.4792],
+    [18.1091, 25.2604],
+    [25.3818, 25.9115],
+    [32.6545, 26.4323],
+    [39.9273, 26.8229],
+    [47.2000, 26.9531],
+    [54.4727, 26.9531],
+    [61.7455, 26.8229],
+    [69.0182, 26.3021],
+    [76.2909, 25.7813],
+    [83.5636, 25.0000],
+    [90.8364, 24.7396],
 ];
 
 export const BOTTOM: [number, number][] = [
-    [8.611111, 71.316499],
-    [16.730902, 70.708827],
-    [26.985094, 69.629560],
-    [37.285474, 68.935746],
-    [42.791668, 68.630475],
-    [46.569447, 68.491395],
-    [52.361111, 68.317543],
-    [59.236111, 68.630475],
-    [65.888888, 69.117265],
-    [75.916672, 69.916983],
-    [87.375005, 71.203496],
-    [93.277783, 71.733755],
+    [10.8364, 64.0625],
+    [18.1091, 64.1927],
+    [25.3818, 63.1510],
+    [32.6545, 62.6302],
+    [39.9273, 62.2396],
+    [47.2000, 62.3698],
+    [54.4727, 62.3698],
+    [61.7455, 62.2396],
+    [69.0182, 62.6302],
+    [76.2909, 63.1510],
+    [83.5636, 63.8021],
+    [90.8364, 64.4531],
 ];
 
 // Catmull-Rom -> cubic Bezier, so the curve passes exactly through every point

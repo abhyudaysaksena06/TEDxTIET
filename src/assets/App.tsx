@@ -76,7 +76,8 @@ export default function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/home" element={<Navigate to="/" replace />} />
                 <Route path="/register" element={<RegistrationPage />} />
-                <Route path="/gallery" element={<PageShell><SphereGallery /></PageShell>} />
+                {/* the globe owns the whole viewport here — no shell, no page scroll */}
+                <Route path="/gallery" element={<SphereGallery fullPage />} />
                 <Route path="/speakers" element={<PageShell><SpeakersPage /></PageShell>} />
                 <Route path="/team" element={<PageShell><TeamPage /></PageShell>} />
                 <Route path="/alumni" element={<PageShell><AlumniPage /></PageShell>} />

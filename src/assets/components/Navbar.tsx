@@ -10,6 +10,17 @@ const navLinks = [
     { title: "Alumni", href: "/alumni" },
 ];
 
+/** label shown centred in the bar, so each page announces itself */
+const PAGE_TITLES: Record<string, string> = {
+    "/gallery": "Gallery",
+    "/team": "Team",
+    "/speakers": "Speakers",
+    "/alumni": "Alumni",
+    "/event": "Events",
+    "/contact": "Contact",
+    "/register": "Register",
+};
+
 /** "/" and "/home" are the same destination, so treat them as one. */
 function normalizePath(path: string) {
     const clean = path.replace(/\/+$/, "");
@@ -25,6 +36,7 @@ export default function Navbar() {
     const visibleLinks = navLinks.filter((link) => link.href !== currentPath);
 
     // pages whose content runs bright/photographic right under the navbar
+    const pageTitle = PAGE_TITLES[currentPath] ?? null;
     const needsScrim = ["/gallery", "/team", "/alumni"].includes(currentPath);
 
     // Animation variants for the background bars
@@ -87,6 +99,12 @@ export default function Navbar() {
             >
                 TEDxTIET
             </Link>
+
+            {pageTitle && !isOpen && (
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 font-['Anton'] text-base uppercase tracking-[0.3em] text-white/80 sm:text-lg">
+                    {pageTitle}
+                </span>
+            )}
 
             {/* Animated Hamburger Icon */}
             <button
