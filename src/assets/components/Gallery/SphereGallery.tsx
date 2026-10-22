@@ -571,7 +571,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                     }}
                 />
                 <div ref={mountRef} className="h-full w-full select-none" />
-                <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center font-mono text-[10px] tracking-[0.3em] uppercase text-white/35">
+                <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center font-mono text-[11px] tracking-[0.3em] uppercase text-white/60">
                     Drag to spin · Scroll to zoom · Tap a frame
                 </p>
             </div>

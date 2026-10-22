@@ -205,7 +205,9 @@ export default function Footer() {
                     <Link
                         to="/register"
                         className="inline-flex items-center gap-2 self-start px-2 py-1 font-['Anton'] text-sm uppercase tracking-[0.06em] transition-opacity duration-300 hover:opacity-85 md:self-end"
-                        style={{ backgroundColor: "#eb0028", color: PAPER }}
+                        // PAPER (#111) on the red is 4.1:1 — just under AA at this size.
+                        // True black clears it at 4.56 and reads the same.
+                        style={{ backgroundColor: "#eb0028", color: "#000000" }}
                     >
                         <span aria-hidden="true" className="text-[0.7em]">
                             ●

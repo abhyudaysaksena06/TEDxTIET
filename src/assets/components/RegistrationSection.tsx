@@ -18,7 +18,7 @@ export default function RegistrationSection() {
                     <span className="text-[#eb0028]">your destiny is shaped</span>.&quot;
                 </blockquote>
 
-                <p className="mt-10 font-mono text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-[#eb0028]">
+                <p className="mt-10 font-mono text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-[#ff3b52]">
                     &mdash; Tony Robbins
                 </p>
 

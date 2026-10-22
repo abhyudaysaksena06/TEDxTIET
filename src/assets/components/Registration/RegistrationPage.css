@@ -1,5 +1,9 @@
 :root {
   --red: #EB0028;
+  /* The brand red reaches only 4.22:1 on this near-black ground, so it fails
+     AA below 24px. Display type keeps --red; anything small uses --red-ink,
+     which is the same hue lifted to 5.55:1. */
+  --red-ink: #FF3B52;
   --black: #000000;
   --dark-gray: #0D0D0D;
   --gray: #B5B5B5;
@@ -82,7 +86,7 @@ form {
 }
 
 .field label .req {
-  color: var(--red);
+  color: var(--red-ink);
 }
 
 .field input {
@@ -124,7 +128,7 @@ form {
 }
 
 .consent a {
-  color: var(--red);
+  color: var(--red-ink);
   text-decoration: none;
 }
 
@@ -180,7 +184,7 @@ button.submit:disabled {
 }
 
 .error-msg {
-  color: var(--red);
+  color: var(--red-ink);
   font-size: 0.78rem;
   margin-top: 6px;
   min-height: 1em;

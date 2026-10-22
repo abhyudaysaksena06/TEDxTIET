@@ -68,7 +68,7 @@ body {
 .register-btn {
   display: inline-block;
   margin-top: 3rem;
-  background-color: #ff0000;
+  background-color: #eb0028; /* white on #ff0000 is 4.0:1; the brand red clears AA at 4.6 */
   color: #fff;
   padding: 0.9rem 2rem;
   border-radius: 8px;
