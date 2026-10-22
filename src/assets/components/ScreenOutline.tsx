@@ -70,7 +70,7 @@ export default function ScreenOutline() {
         >
             <path
                 d={buildOutline()}
-                fill="#000000"
+                fill="none"
                 stroke="white"
                 strokeWidth="2"
                 vectorEffect="non-scaling-stroke"

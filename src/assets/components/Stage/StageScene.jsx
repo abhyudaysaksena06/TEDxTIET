@@ -21,9 +21,17 @@ import fontJson from './helvetiker_bold.typeface.json'
  * pinned to `{ x, y }` every frame — used once the user starts scrolling, so the
  * logo settles into a fixed pose instead of continuing to react to the pointer.
  */
-/** @param {{ idleRef?: any, frozenRef?: any }} props */
-function StageScene({ idleRef, frozenRef } = {}) {
+/**
+ * `mode` picks which title is built: 'logo' (TEDxTIET) or 'archive'
+ * (ARCHIVE OF VOICES). `onSelect` fires on a genuine click — a press and release
+ * that didn't travel far enough to count as a drag-to-rotate.
+ */
+/** @param {{ idleRef?: any, frozenRef?: any, mode?: 'logo'|'archive', onSelect?: () => void }} props */
+function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
   const mountRef = useRef(null)
+  // kept in a ref so the effect never closes over a stale handler
+  const onSelectRef = useRef(onSelect)
+  onSelectRef.current = onSelect
 
   useEffect(() => {
     const mount = mountRef.current
@@ -139,32 +147,54 @@ function StageScene({ idleRef, frozenRef } = {}) {
         return mesh
       }
 
-      const ted = make('TED', textOpts, [redMat, redMat, redSideMat])
-      const tedW = ted.geometry.boundingBox.max.x - ted.geometry.boundingBox.min.x
+      if (mode === 'archive') {
+        // "ARCHIVE OF VOICES" — two stacked lines, smaller than the logo so the
+        // longer string still sits inside the same screen width
+        const lineOpts = { ...textOpts, size: 0.95 }
+        const top = make('ARCHIVE OF', lineOpts, [whiteMat, whiteMat, whiteSideMat], 0x606060)
+        const bottom = make('VOICES', lineOpts, [redMat, redMat, redSideMat])
 
-      const x = make('x', { ...textOpts, size: 0.7 }, [redMat, redMat, redSideMat])
-      const xW = x.geometry.boundingBox.max.x - x.geometry.boundingBox.min.x
+        // centre each line on its own bounding box, then stack them
+        const place = (mesh, y) => {
+          const b = mesh.geometry.boundingBox
+          mesh.position.set(
+            -(b.max.x + b.min.x) / 2,
+            y - (b.max.y + b.min.y) / 2,
+            -(b.max.z + b.min.z) / 2
+          )
+        }
+        place(top, 0.72)
+        place(bottom, -0.72)
 
-      // darker outline so the bezels cast a subtle shadow line against the white
-      const tiet = make('TIET', textOpts, [whiteMat, whiteMat, whiteSideMat], 0x606060)
-      const tietW = tiet.geometry.boundingBox.max.x - tiet.geometry.boundingBox.min.x
+        logoGroup.add(top, bottom)
+      } else {
+        const ted = make('TED', textOpts, [redMat, redMat, redSideMat])
+        const tedW = ted.geometry.boundingBox.max.x - ted.geometry.boundingBox.min.x
 
-      const gap = 0.12
-      const total = tedW + gap + xW + gap + tietW
-      // vertical/depth centering from TED's own bounds so the pivot sits at the
-      // logo's true center and the row is centered on the carpet's axis
-      const tb = ted.geometry.boundingBox
-      const baseY = -(tb.max.y + tb.min.y) / 2
-      const baseZ = -(tb.max.z + tb.min.z) / 2
-      // each mesh is shifted by its own min.x so glyph bearing doesn't skew the row
-      let cursor = -total / 2
-      ted.position.set(cursor - tb.min.x, baseY, baseZ)
-      cursor += tedW + gap
-      x.position.set(cursor - x.geometry.boundingBox.min.x, baseY + 0.78, baseZ) // superscript x
-      cursor += xW + gap
-      tiet.position.set(cursor - tiet.geometry.boundingBox.min.x, baseY, baseZ)
+        const x = make('x', { ...textOpts, size: 0.7 }, [redMat, redMat, redSideMat])
+        const xW = x.geometry.boundingBox.max.x - x.geometry.boundingBox.min.x
 
-      logoGroup.add(ted, x, tiet)
+        // darker outline so the bezels cast a subtle shadow line against the white
+        const tiet = make('TIET', textOpts, [whiteMat, whiteMat, whiteSideMat], 0x606060)
+        const tietW = tiet.geometry.boundingBox.max.x - tiet.geometry.boundingBox.min.x
+
+        const gap = 0.12
+        const total = tedW + gap + xW + gap + tietW
+        // vertical/depth centering from TED's own bounds so the pivot sits at the
+        // logo's true center and the row is centered on the carpet's axis
+        const tb = ted.geometry.boundingBox
+        const baseY = -(tb.max.y + tb.min.y) / 2
+        const baseZ = -(tb.max.z + tb.min.z) / 2
+        // each mesh is shifted by its own min.x so glyph bearing doesn't skew the row
+        let cursor = -total / 2
+        ted.position.set(cursor - tb.min.x, baseY, baseZ)
+        cursor += tedW + gap
+        x.position.set(cursor - x.geometry.boundingBox.min.x, baseY + 0.78, baseZ) // superscript x
+        cursor += xW + gap
+        tiet.position.set(cursor - tiet.geometry.boundingBox.min.x, baseY, baseZ)
+
+        logoGroup.add(ted, x, tiet)
+      }
       disposables.push(redMat, redSideMat, whiteMat, whiteSideMat)
     }
 
@@ -210,14 +240,27 @@ function StageScene({ idleRef, frozenRef } = {}) {
     // active drag is capped to a 30% offset (of a full turn) on every axis
     const MAX_DRAG_ROTATION = Math.PI * 2 * 0.3
     const canvas = renderer.domElement
-    canvas.style.cursor = 'grab'
+    canvas.style.cursor = onSelectRef.current ? 'pointer' : 'grab'
+
+    // a press that neither travels far nor lingers counts as a click, so
+    // drag-to-rotate and click-to-select can share the same canvas
+    const CLICK_SLOP_PX = 6
+    const CLICK_MAX_MS = 500
+    let pressX = 0
+    let pressY = 0
+    let pressAt = 0
+
     const onPointerDown = (e) => {
+      pressX = e.clientX
+      pressY = e.clientY
+      pressAt = performance.now()
       if (frozenRef?.current?.frozen) return
       dragging = true
       lastX = e.clientX
       lastY = e.clientY
-      canvas.style.cursor = 'grabbing'
-      canvas.setPointerCapture(e.pointerId)
+      if (!onSelectRef.current) canvas.style.cursor = 'grabbing'
+      // capture can throw for a pointer the browser doesn't consider active
+      try { canvas.setPointerCapture(e.pointerId) } catch { /* not capturable */ }
     }
     const onPointerMove = (e) => {
       if (!dragging) return
@@ -230,8 +273,17 @@ function StageScene({ idleRef, frozenRef } = {}) {
     }
     const onPointerUp = (e) => {
       dragging = false
-      canvas.style.cursor = 'grab'
-      canvas.releasePointerCapture(e.pointerId)
+      canvas.style.cursor = onSelectRef.current ? 'pointer' : 'grab'
+
+      // resolve the click FIRST — releasing capture can throw, and a click must
+      // never be swallowed by that
+      const travelled = Math.hypot(e.clientX - pressX, e.clientY - pressY)
+      const held = performance.now() - pressAt
+      if (onSelectRef.current && travelled < CLICK_SLOP_PX && held < CLICK_MAX_MS) {
+        onSelectRef.current()
+      }
+
+      try { canvas.releasePointerCapture(e.pointerId) } catch { /* never captured */ }
     }
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointermove', onPointerMove)
@@ -262,7 +314,9 @@ function StageScene({ idleRef, frozenRef } = {}) {
       pmrem.dispose()
       renderer.dispose()
     }
-  }, [idleRef])
+    // `mode` rebuilds the scene so the title can swap between TEDxTIET and
+    // ARCHIVE OF VOICES; it's a one-off click, so the teardown cost is fine
+  }, [idleRef, mode])
 
   return <div ref={mountRef} className="absolute inset-0" />
 }

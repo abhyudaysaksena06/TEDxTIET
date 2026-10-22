@@ -11,7 +11,6 @@ import ImpactSection from './components/Impact/ImpactSection';
 import Footer from './components/Footer';
 import RegistrationPage from './components/Registration/RegistrationPage';
 // Pages ported from TEDxTIET1/TEDxTIET26-27 (src/Components/*). Home stays ours.
-import GalleryPage from './pages/infiniteGallery';
 import SpeakersPage from './pages/Speaker';
 import TeamPage from './pages/Team';
 import AlumniPage from './pages/alumni';
@@ -19,19 +18,42 @@ import EventPage from './pages/Event';
 import ContactPage from './pages/ContactForm';
 import NotFoundPage from './pages/NotFound';
 import Reveal from './components/Reveal';
+import { preloadHeroMedia, startBackgroundMediaLoad } from './lib/preloadMedia';
+import useSmoothScroll from './hooks/useSmoothScroll';
+import SphereGallery from './components/Gallery/SphereGallery';
 
 /** Ported pages sit under the fixed navbar, so they need clearance at the top. */
 function PageShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-black pt-20">{children}</div>;
 }
 
+// how long the preloader animation needs to play out before it can be dismissed
+const PRELOADER_MIN_MS = 1600;
+
 export default function App() {
     // preloader from the source repo — shown once on first load
     const [loading, setLoading] = useState(true);
+    // eases every scroll on the site; the long pinned sequences depend on it
+    useSmoothScroll();
 
     useEffect(() => {
-        const timer = setTimeout(() => setLoading(false), 1600);
-        return () => clearTimeout(timer);
+        let cancelled = false;
+
+        // Hero media starts downloading with the preloader, not after it, so the
+        // background and reel portraits are cached before the curtain lifts.
+        // The curtain waits for whichever finishes LAST: the animation's minimum
+        // runtime, or the hero fetches (themselves capped, so a slow connection
+        // can't strand the user on the preloader).
+        const minDisplay = new Promise((resolve) => setTimeout(resolve, PRELOADER_MIN_MS));
+
+        Promise.all([minDisplay, preloadHeroMedia()]).then(() => {
+            if (cancelled) return;
+            setLoading(false);
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     if (loading) return <Reveal />;
@@ -43,7 +65,7 @@ export default function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/home" element={<Navigate to="/" replace />} />
                 <Route path="/register" element={<RegistrationPage />} />
-                <Route path="/gallery" element={<PageShell><GalleryPage /></PageShell>} />
+                <Route path="/gallery" element={<PageShell><SphereGallery /></PageShell>} />
                 <Route path="/speakers" element={<PageShell><SpeakersPage /></PageShell>} />
                 <Route path="/team" element={<PageShell><TeamPage /></PageShell>} />
                 <Route path="/alumni" element={<PageShell><AlumniPage /></PageShell>} />
@@ -58,15 +80,31 @@ export default function App() {
 function HomePage() {
     const scrollRootRef = useRef<HTMLDivElement>(null);
 
+    // The speaker reel is opt-in: scrolling the untouched hero just moves down
+    // the page. Clicking the hero flips it to "ARCHIVE OF VOICES" and opens the
+    // long scroll track that plays the reel.
+    const [archiveOpen, setArchiveOpen] = useState(false);
+
+    // user is on the home page now — start pulling the other pages' images
+    // in the background so /gallery and /team are warm when they get there
+    useEffect(() => {
+        startBackgroundMediaLoad();
+    }, []);
+
     return (
         <>
             {/* Navbar is rendered once by the router above, NOT here: `position: sticky`
                 on the hero creates a stacking context, which would trap its z-index
                 below every later section no matter how high it was set. */}
 
-            {/* tall scroll track: gives the pinned viewport below room to scrub through
-                the logo-move -> reel-play sequence */}
-            <div ref={scrollRootRef} className="relative h-[700vh] bg-black">
+            {/* Scroll track. Only one viewport tall until the hero is clicked —
+                so a plain scroll goes straight on down the page — then it opens to
+                700vh to give the reel sequence room to play. */}
+            <div
+                ref={scrollRootRef}
+                className="relative bg-black"
+                style={{ height: archiveOpen ? '700vh' : '100vh' }}
+            >
                 <div
                     className="sticky top-0 h-screen w-screen bg-black bg-cover bg-center overflow-hidden text-white font-['Anton'] selection:bg-[#eb0028] selection:text-white"
                     style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.35)), url('/HOME_BG.png')" }}
@@ -78,8 +116,17 @@ function HomePage() {
                         <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)] relative">
                             <ScreenOutline />
 
-                            <ScrollLogo scrollRootRef={scrollRootRef} />
-                            <ReelOnScreen scrollRootRef={scrollRootRef} />
+                            <ScrollLogo
+                                scrollRootRef={scrollRootRef}
+                                active={archiveOpen}
+                                onSelect={() => {
+                                    // collapsing a 700vh track from halfway down would
+                                    // yank the page, so close from the top
+                                    if (archiveOpen) window.scrollTo({ top: 0 });
+                                    setArchiveOpen((open) => !open);
+                                }}
+                            />
+                            {archiveOpen && <ReelOnScreen scrollRootRef={scrollRootRef} />}
 
                             <motion.div
                                 className="w-full flex justify-between items-center absolute bottom-12 px-2 z-20"
@@ -110,13 +157,16 @@ function HomePage() {
                 scroll, and the hero stays pinned underneath, so the panel reads as
                 sliding up and stacking on top. */}
             {/* NOTE: no overflow-hidden here — it would clip AboutSection's sticky pin */}
-            <div className="relative z-30 -mt-[100vh]">
+            {/* The overlap only makes sense once the track is 700vh — against a
+                dormant 100vh hero it would swallow the whole thing. */}
+            <div className={`relative z-30 ${archiveOpen ? '-mt-[100vh]' : ''}`}>
                 <RegistrationSection />
 
                 {/* pinned: one viewport of scroll per card, so the page only moves on
                     after TED -> TEDx -> TEDxTIET have all been seen */}
                 <AboutSection />
 
+                {/* the sphere gallery lives on /gallery, not here */}
                 <ImpactSection />
 
                 <Footer />

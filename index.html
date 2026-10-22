@@ -11,7 +11,13 @@
     />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
-    <title>tedx-nav</title>
+
+    <!-- earliest possible start for the hero plate: the browser begins this
+         fetch while the JS bundle is still downloading, before React mounts -->
+    <link rel="preload" as="image" href="/HOME_BG.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="/Speakers/dikshant2.jpg" />
+
+    <title>TEDxTIET</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
