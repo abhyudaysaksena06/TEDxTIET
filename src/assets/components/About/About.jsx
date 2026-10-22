@@ -441,37 +441,47 @@ export default function About({ controlledSection = null }) {
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="w-full"
             >
-              <div className="content-card relative overflow-hidden rounded-[20px] md:rounded-[28px] py-8 px-6 md:py-12 md:px-14">
-                <span className="content-card__watermark absolute -top-6 right-8 font-display font-black text-[clamp(80px,13vw,180px)] leading-none select-none pointer-events-none">
-                  {current.index}
-                </span>
+              {/* Editorial layout: no card, no glass. A hairline rule, an
+                  oversized outlined index as structure, and one long measure.
+                  The index is a real design element here rather than a blurred
+                  watermark, and the counter appears once (in the rail) instead
+                  of twice. */}
+              <article className="relative">
+                <div className="flex items-baseline gap-5 md:gap-8">
+                  <span
+                    aria-hidden="true"
+                    className="about-index shrink-0 font-display font-black leading-none select-none text-[clamp(56px,9vw,120px)]"
+                  >
+                    {current.index}
+                  </span>
 
-                <div className="relative flex flex-col">
-                  <div className="w-full">
-                    <div className="flex items-center gap-3 mb-5">
-                      <span className="w-2 h-2 rounded-full bg-tedx-red" />
-                      <span className="font-mono text-[11px] tracking-[0.25em] font-semibold text-tedx-red">
-                        {current.tag} · {current.meta}
-                      </span>
-                    </div>
-
-                    <h2 className="font-display font-black tracking-[-0.01em] leading-[0.9] text-[clamp(2.25rem,11vw,3rem)] md:text-[clamp(2.75rem,4.2vw,4.5rem)] text-white mb-6">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-tedx-red">
+                      {current.tag}
+                    </p>
+                    <h2 className="mt-2 font-display font-black tracking-[-0.015em] leading-[0.88] text-balance text-white text-[clamp(2.5rem,9vw,3.25rem)] md:text-[clamp(3rem,4.6vw,4.75rem)]">
                       {renderSectionTitle(current.title)}
                     </h2>
-
-                    <p className="text-[0.9375rem] md:text-[1.0625rem] leading-[1.7] text-white/75 max-w-[62ch] m-0">
-                      {current.body}
-                    </p>
-
-                    <div className="h-px w-full bg-[rgba(255,255,255,0.08)] mt-8 mb-6" />
-
-                    <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:justify-between font-mono text-[11px] tracking-[0.15em] text-white/45">
-                      <span>{`0${activeSection + 1} / 0${ABOUT_SECTIONS.length}`}</span>
-                      <span>INDEPENDENTLY ORGANIZED</span>
-                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* red rule carries the eye from the title into the body */}
+                <div className="mt-7 flex items-center gap-4">
+                  <span className="h-px w-16 shrink-0 bg-tedx-red" />
+                  <span className="font-mono text-[11px] tracking-[0.18em] text-white/50">
+                    {current.meta}
+                  </span>
+                  <span className="h-px flex-1 bg-white/10" />
+                </div>
+
+                <p className="mt-7 max-w-[64ch] text-pretty text-[1rem] leading-[1.75] text-white/80 md:text-[1.0625rem]">
+                  {current.body}
+                </p>
+
+                <p className="mt-8 font-mono text-[10px] tracking-[0.3em] text-white/35">
+                  INDEPENDENTLY ORGANIZED
+                </p>
+              </article>
             </motion.div>
           </AnimatePresence>
         </main>

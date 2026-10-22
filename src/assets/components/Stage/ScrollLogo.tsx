@@ -23,6 +23,9 @@ const ease = (t: number) => t * t * (3 - 2 * t); // smoothstep, for a swift-but-
 
 interface Props {
     scrollRootRef: RefObject<HTMLElement | null>;
+    /** stage width / desktop reference width — keeps the logo proportional
+     *  to the drawn screen instead of a fixed pixel size */
+    scaleK?: number;
     /** false until the user clicks the hero: the reel sequence is dormant */
     active?: boolean;
     onSelect?: () => void;
@@ -31,7 +34,7 @@ interface Props {
 /** half of the title crossfade: out, swap, back in */
 const SWAP_FADE_MS = 420;
 
-export default function ScrollLogo({ scrollRootRef, active = false, onSelect }: Props) {
+export default function ScrollLogo({ scrollRootRef, active = false, onSelect, scaleK = 1 }: Props) {
     const progress = useScrollProgress(scrollRootRef);
     const frozenRef = useRef({ frozen: false, x: FROZEN_ROTATION.x, y: FROZEN_ROTATION.y });
     // "as soon as I scroll" — any progress at all freezes cursor/drag rotation
@@ -81,7 +84,11 @@ export default function ScrollLogo({ scrollRootRef, active = false, onSelect }: 
         opacity = 0;
     }
 
-    const { x, y, scale } = START_TRANSFORM;
+    // tuned on the desktop stage; scale with it so phones get the same composition
+    const k = scaleK > 0 ? scaleK : 1;
+    const x = START_TRANSFORM.x * k;
+    const y = START_TRANSFORM.y * k;
+    const scale = START_TRANSFORM.scale * k;
     // during the swap the title dips to zero regardless of scroll state
     const shown = swapping ? 0 : opacity;
 

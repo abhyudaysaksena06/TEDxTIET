@@ -15,13 +15,13 @@ import { filmFramesData } from "../components/Reel/filmData";
 
 /** Shown immediately: hero background + the speaker frames in the reel. */
 export const HERO_MEDIA: string[] = [
-    "/HOME_BG.png",
+    "/HOME_BG.webp",
     ...(filmFramesData as { image: string }[]).map((f) => f.image),
 ];
 
 /** Only needed once the user navigates to /gallery or /team. */
 export const DEFERRED_MEDIA: string[] = [
-    ...Array.from({ length: 35 }, (_, i) => `/Gallery/img${i + 1}.jpeg`),
+    ...Array.from({ length: 35 }, (_, i) => `/Gallery/img${i + 1}.webp`),
 ];
 
 function loadImage(src: string): Promise<void> {

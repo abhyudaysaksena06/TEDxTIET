@@ -318,7 +318,16 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     // ARCHIVE OF VOICES; it's a one-off click, so the teardown cost is fine
   }, [idleRef, mode])
 
-  return <div ref={mountRef} className="absolute inset-0" />
+  // the canvas paints the TEDxTIET wordmark; label it so assistive tech
+  // reports something other than an empty box
+  return (
+    <div
+      ref={mountRef}
+      className="absolute inset-0"
+      role="img"
+      aria-label="TEDxTIET logo, rendered in 3D"
+    />
+  )
 }
 
 export default StageScene

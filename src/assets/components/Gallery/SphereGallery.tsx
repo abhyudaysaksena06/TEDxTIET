@@ -1,36 +1,35 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import useIsPhone from "../../hooks/useIsPhone";
 
 /**
- * SphereGallery — photographs distributed over a sphere you can spin.
+ * SphereGallery — photographs you can spin, focus and read.
  *
- * Inspired by the media wall on beckyentertainment.co (three.js + inertial
- * drag), retuned for this site: black ground, TEDx red, and a signature of its
- * own — thin red lines that jump between neighbouring photos, each carrying a
- * travelling pulse, so the cloud reads as wired-together rather than static.
+ * Layout adapts to the viewport:
+ *  - DESKTOP: a sphere (Fibonacci lattice, no clustering at the poles).
+ *  - PHONE:   a cylinder. A sphere on a narrow portrait screen puts most tiles
+ *             at grazing angles where they are unreadable; a carousel-style
+ *             cylinder keeps every tile facing out and legible, and maps
+ *             naturally onto a one-axis horizontal swipe.
  *
- * Two behaviours worth knowing about:
- *  - Tiles are oriented RADIALLY (each one's face points out from the centre),
- *    not billboarded at the camera, so the cloud reads as a solid globe.
- *  - Clicking a tile spins the globe until that tile faces you and pulls the
- *    camera in. Dragging still works throughout — taking hold of it simply
- *    cancels the auto-alignment and hands control back.
+ * Tiles are oriented RADIALLY (face pointing out from the axis/centre) rather
+ * than billboarded at the camera, so the body reads as a solid object.
  *
- * Rotation is stored as a quaternion rather than Euler angles: aligning an
- * arbitrary tile to the camera is a single slerp that way, whereas with x/y
- * Euler it needs trigonometry that gimbal-locks near the poles.
+ * Drag is 1:1 with the pointer and carries momentum on release. Velocity is
+ * measured in radians-per-second from real elapsed time, and damping is
+ * exponential per second, so the feel is identical at 60Hz and 120Hz — the
+ * previous version accumulated per-event, which drifted with frame rate.
+ *
+ * Rotation is a quaternion: aligning an arbitrary tile to the camera is one
+ * slerp, where x/y Euler angles would gimbal-lock near the poles.
  */
 
 const IMAGE_COUNT = 35;
 /** every photo gets a twin slot, reserved as a placeholder for new media */
 const SLOT_COUNT = IMAGE_COUNT * 2;
-const RADIUS = 6.4;
-const TILE = 0.92; // half-width of a photo plane
 const RED = new THREE.Color("#eb0028");
-
-const CAM_FAR = 15; // resting distance
-const CAM_NEAR = 8.6; // pulled in on a focused tile
 const FRONT = new THREE.Vector3(0, 0, 1); // toward the camera
+const UP = new THREE.Vector3(0, 1, 0);
 
 /** Evenly spread N points over a sphere (Fibonacci lattice — no clustering). */
 function fibonacciSphere(count: number, radius: number) {
@@ -43,6 +42,22 @@ function fibonacciSphere(count: number, radius: number) {
         points.push(
             new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r).multiplyScalar(radius)
         );
+    }
+    return points;
+}
+
+/** Stacked rings around a vertical axis — the phone layout. */
+function cylinderPoints(count: number, radius: number, rows: number, rowGap: number) {
+    const points: THREE.Vector3[] = [];
+    const perRow = Math.ceil(count / rows);
+    for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / perRow);
+        const col = i % perRow;
+        // stagger alternate rows so columns do not line up into visible seams
+        const offset = row % 2 ? Math.PI / perRow : 0;
+        const theta = (col / perRow) * Math.PI * 2 + offset;
+        const y = (row - (rows - 1) / 2) * rowGap;
+        points.push(new THREE.Vector3(Math.cos(theta) * radius, y, Math.sin(theta) * radius));
     }
     return points;
 }
@@ -88,7 +103,6 @@ interface Link {
     line: THREE.Line;
     pulse: THREE.Mesh;
     curve: THREE.QuadraticBezierCurve3;
-    /** 0..1 progress of the travelling pulse */
     t: number;
     speed: number;
     life: number;
@@ -97,10 +111,18 @@ interface Link {
 
 export default function SphereGallery() {
     const mountRef = useRef<HTMLDivElement>(null);
+    const isPhone = useIsPhone();
 
     useEffect(() => {
         const mount = mountRef.current;
         if (!mount) return;
+
+        // ---------- layout constants, per form ----------
+        const CYL = isPhone;
+        const RADIUS = CYL ? 4.2 : 6.4;
+        const TILE = CYL ? 0.78 : 0.92; // half-width of a photo plane
+        const CAM_FAR = CYL ? 11.5 : 15;
+        const CAM_NEAR = CYL ? 6.4 : 8.6;
 
         let width = mount.clientWidth || window.innerWidth;
         let height = mount.clientHeight || window.innerHeight;
@@ -115,12 +137,13 @@ export default function SphereGallery() {
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         mount.appendChild(renderer.domElement);
 
-        // the whole cloud lives on one group so drag rotates everything together
         const world = new THREE.Group();
         scene.add(world);
 
         const disposables: { dispose: () => void }[] = [];
-        const positions = fibonacciSphere(SLOT_COUNT, RADIUS);
+        const positions = CYL
+            ? cylinderPoints(SLOT_COUNT, RADIUS, 5, TILE * 1.9)
+            : fibonacciSphere(SLOT_COUNT, RADIUS);
         const tiles: THREE.Mesh[] = [];
 
         // ---------- photo tiles ----------
@@ -129,13 +152,18 @@ export default function SphereGallery() {
         const placeholderTex = makePlaceholderTexture();
         disposables.push(tileGeo, placeholderTex);
 
+        /** resting orientation: face pointing radially outward */
+        const restQuat = (outward: THREE.Vector3) =>
+            new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(new THREE.Vector3(), outward, UP)
+            );
+
         positions.forEach((pos, i) => {
-            // alternate real photo / placeholder so the empty slots spread evenly
             const isPlaceholder = i % 2 === 1;
             const photoIndex = Math.floor(i / 2) + 1;
 
             const mat = new THREE.MeshBasicMaterial({
-                color: isPlaceholder ? 0xffffff : 0x8a8a8a, // dim until its texture lands
+                color: isPlaceholder ? 0xffffff : 0x8a8a8a,
                 map: isPlaceholder ? placeholderTex : null,
                 transparent: true,
                 opacity: 0,
@@ -143,10 +171,15 @@ export default function SphereGallery() {
             });
             const mesh = new THREE.Mesh(tileGeo, mat);
             mesh.position.copy(pos);
-            // face radially outward: point the plane's +Z along its own position
-            mesh.lookAt(pos.clone().multiplyScalar(2));
-            mesh.userData.isPlaceholder = isPlaceholder;
-            mesh.userData.photoIndex = photoIndex;
+
+            // On the cylinder "outward" ignores Y (out from the vertical axis);
+            // on the sphere it is straight out from the centre.
+            const outward = CYL
+                ? new THREE.Vector3(pos.x, 0, pos.z).normalize()
+                : pos.clone().normalize();
+            mesh.userData.outward = outward;
+            mesh.quaternion.copy(restQuat(outward));
+
             world.add(mesh);
             tiles.push(mesh);
             disposables.push(mat);
@@ -154,7 +187,7 @@ export default function SphereGallery() {
             if (isPlaceholder) return;
 
             loader.load(
-                `/Gallery/img${photoIndex}.jpeg`,
+                `/Gallery/img${photoIndex}.webp`,
                 (tex) => {
                     tex.colorSpace = THREE.SRGBColorSpace;
                     mat.map = tex;
@@ -164,7 +197,7 @@ export default function SphereGallery() {
                 },
                 undefined,
                 () => {
-                    /* missing image: the tile just stays a dim panel */
+                    /* missing image: the tile stays a dim panel */
                 }
             );
         });
@@ -178,7 +211,6 @@ export default function SphereGallery() {
         const spawnLink = () => {
             if (links.length > 5) return;
             const a = tiles[Math.floor(Math.random() * tiles.length)];
-            // prefer a nearby partner so lines stay short and legible
             const candidates = tiles
                 .filter((t) => t !== a)
                 .sort((p, q) => p.position.distanceTo(a.position) - q.position.distanceTo(a.position))
@@ -186,7 +218,6 @@ export default function SphereGallery() {
             const b = candidates[Math.floor(Math.random() * candidates.length)];
             if (!b) return;
 
-            // bow the line outward so it arcs over the sphere's surface
             const mid = a.position.clone().add(b.position).multiplyScalar(0.5);
             mid.setLength(RADIUS * 1.14);
             const curve = new THREE.QuadraticBezierCurve3(a.position.clone(), mid, b.position.clone());
@@ -217,99 +248,61 @@ export default function SphereGallery() {
             (link.pulse.material as THREE.Material).dispose();
         };
 
-        // ---------- focus state ----------
+        // ---------- focus ----------
         let focused: THREE.Mesh | null = null;
-        /** true while the globe is auto-turning; any drag cancels it */
         let aligning = false;
         const alignTarget = new THREE.Quaternion();
+        let targetLift = 0; // cylinder: vertical shift that centres the tile
+        let lift = 0;
 
         const focusTile = (tile: THREE.Mesh) => {
             focused = tile;
             aligning = true;
-            // rotation that carries this tile's direction round to face the camera
-            const dir = tile.position.clone().normalize();
-            alignTarget.setFromUnitVectors(dir, FRONT);
+
+            if (CYL) {
+                // one axis of freedom: swing the tile round to the front, and
+                // slide the body so the tile lands on the camera eye line
+                const p = tile.position;
+                const theta = Math.atan2(p.x, p.z); // angle from +Z
+                alignTarget.setFromAxisAngle(UP, -theta);
+                targetLift = -p.y;
+            } else {
+                const dir = tile.position.clone().normalize();
+                alignTarget.setFromUnitVectors(dir, FRONT);
+                targetLift = 0;
+            }
         };
+
         const clearFocus = () => {
             focused = null;
             aligning = false;
+            targetLift = 0;
         };
 
-        // ---------- inertial drag ----------
+        // ---------- drag: 1:1 with the pointer, momentum on release ----------
+        const SENS = CYL ? 0.0062 : 0.005; // radians per pixel
         let dragging = false;
         let lastX = 0;
         let lastY = 0;
-        let velX = 0;
-        let velY = 0;
-        // click vs drag: a press that barely moves is a click
         let downX = 0;
         let downY = 0;
         let moved = 0;
+        let lastMoveT = 0;
+        let velX = 0; // radians / second
+        let velY = 0;
+
         const canvas = renderer.domElement;
         canvas.style.cursor = "grab";
         canvas.style.touchAction = "none";
 
-        const onDown = (e: PointerEvent) => {
-            dragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-            downX = e.clientX;
-            downY = e.clientY;
-            moved = 0;
-            canvas.style.cursor = "grabbing";
-            // taking hold of the globe cancels the auto-turn, but keeps the zoom
-            aligning = false;
-            try { canvas.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+        const spinEuler = new THREE.Euler();
+        const spinQuat = new THREE.Quaternion();
+        const applySpin = (rx: number, ry: number) => {
+            spinEuler.set(rx, ry, 0);
+            spinQuat.setFromEuler(spinEuler);
+            world.quaternion.premultiply(spinQuat);
         };
-        const onMove = (e: PointerEvent) => {
-            if (!dragging) return;
-            const dx = e.clientX - lastX;
-            const dy = e.clientY - lastY;
-            moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
-            // feed velocity rather than setting rotation, so releasing keeps the spin
-            velY += dx * 0.00035;
-            velX += dy * 0.00028;
-            lastX = e.clientX;
-            lastY = e.clientY;
-        };
-        const onUp = (e: PointerEvent) => {
-            dragging = false;
-            canvas.style.cursor = "grab";
-            try { canvas.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
 
-            if (moved < 5) {
-                // a click: focus what's under it, or step back out
-                const hit = pickTile(e);
-                if (hit && hit !== focused) focusTile(hit);
-                else clearFocus();
-            }
-        };
-        canvas.addEventListener("pointerdown", onDown);
-        canvas.addEventListener("pointermove", onMove);
-        canvas.addEventListener("pointerup", onUp);
-        canvas.addEventListener("pointercancel", onUp);
-
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") clearFocus();
-        };
-        window.addEventListener("keydown", onKey);
-
-        // ---------- hover highlight ----------
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-        // an off-canvas NDC still casts a valid ray and can clip a tile, so track
-        // presence explicitly rather than parking the pointer at a sentinel value
-        let pointerInside = false;
-        const onPointerTrack = (e: PointerEvent) => {
-            const r = canvas.getBoundingClientRect();
-            pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-            pointerInside = true;
-        };
-        const onPointerLeave = () => { pointerInside = false; };
-        canvas.addEventListener("pointermove", onPointerTrack);
-        canvas.addEventListener("pointerleave", onPointerLeave);
-
-        /** nearest tile under a pointer event, or null */
         function pickTile(e: PointerEvent) {
             const r = canvas.getBoundingClientRect();
             const v = new THREE.Vector2(
@@ -321,54 +314,136 @@ export default function SphereGallery() {
             return hit ? (hit.object as THREE.Mesh) : null;
         }
 
-        // pause the loop entirely while the section is off-screen
+        const onDown = (e: PointerEvent) => {
+            dragging = true;
+            lastX = downX = e.clientX;
+            lastY = downY = e.clientY;
+            moved = 0;
+            lastMoveT = performance.now();
+            velX = velY = 0; // catching it stops the spin dead, like grabbing a wheel
+            canvas.style.cursor = "grabbing";
+            aligning = false;
+            try {
+                canvas.setPointerCapture(e.pointerId);
+            } catch {
+                /* not capturable */
+            }
+        };
+
+        const onMove = (e: PointerEvent) => {
+            if (!dragging) return;
+            const now = performance.now();
+            const dt = Math.max(1, now - lastMoveT) / 1000;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
+
+            // move the body with the finger, right now — this is what reads as
+            // grabbing it. Velocity is recorded only for the throw on release.
+            const ry = dx * SENS;
+            const rx = CYL ? 0 : dy * SENS; // the cylinder spins on one axis only
+            applySpin(rx, ry);
+
+            velY = ry / dt;
+            velX = rx / dt;
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+            lastMoveT = now;
+        };
+
+        const onUp = (e: PointerEvent) => {
+            if (!dragging) return;
+            dragging = false;
+            canvas.style.cursor = "grab";
+            try {
+                canvas.releasePointerCapture(e.pointerId);
+            } catch {
+                /* never captured */
+            }
+
+            // a press that barely moved is a click, not a throw
+            if (moved < 6) {
+                velX = velY = 0;
+                const hit = pickTile(e);
+                if (hit && hit !== focused) focusTile(hit);
+                else clearFocus();
+                return;
+            }
+            // finger paused before lifting: release, do not fling
+            if (performance.now() - lastMoveT > 90) velX = velY = 0;
+        };
+
+        canvas.addEventListener("pointerdown", onDown);
+        canvas.addEventListener("pointermove", onMove);
+        canvas.addEventListener("pointerup", onUp);
+        canvas.addEventListener("pointercancel", onUp);
+
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") clearFocus();
+        };
+        window.addEventListener("keydown", onKey);
+
+        // ---------- hover ----------
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let pointerInside = false;
+        const onPointerTrack = (e: PointerEvent) => {
+            const r = canvas.getBoundingClientRect();
+            pointer.set(
+                ((e.clientX - r.left) / r.width) * 2 - 1,
+                -((e.clientY - r.top) / r.height) * 2 + 1
+            );
+            pointerInside = true;
+        };
+        const onPointerLeave = () => {
+            pointerInside = false;
+        };
+        canvas.addEventListener("pointermove", onPointerTrack);
+        canvas.addEventListener("pointerleave", onPointerLeave);
+
         let visible = true;
         const io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }, {
             threshold: 0,
         });
         io.observe(mount);
 
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
         // ---------- loop ----------
         const clock = new THREE.Clock();
-        const spinEuler = new THREE.Euler();
-        const spinQuat = new THREE.Quaternion();
+        const wantQuat = new THREE.Quaternion();
         let spawnTimer = 0;
         let frameId = 0;
 
         const animate = () => {
             frameId = requestAnimationFrame(animate);
             if (!visible) return;
-
             const dt = Math.min(clock.getDelta(), 0.05);
 
-            if (!dragging) {
-                if (focused) {
-                    // hold still on the focused frame instead of drifting off it
-                    velY *= 0.88;
-                    velX *= 0.88;
-                } else {
-                    // idle drift keeps it alive when nobody's touching it
-                    velY += (0.0016 - velY) * 0.012;
-                    velX *= 0.94;
-                }
-            }
-
             if (aligning) {
-                world.quaternion.slerp(alignTarget, 0.09);
-                if (world.quaternion.angleTo(alignTarget) < 0.005) aligning = false;
-                velX = 0;
-                velY = 0;
-            } else {
-                // screen-space drag: premultiply so it turns about the view axes
-                spinEuler.set(velX, velY, 0);
-                spinQuat.setFromEuler(spinEuler);
-                world.quaternion.premultiply(spinQuat);
-                if (!dragging) velY *= 0.965;
+                // ease toward the chosen tile; a fresh grab cancels this
+                world.quaternion.slerp(alignTarget, 1 - Math.pow(0.0001, dt));
+                if (world.quaternion.angleTo(alignTarget) < 0.004) aligning = false;
+                velX = velY = 0;
+            } else if (!dragging) {
+                // momentum, bleeding off exponentially per second
+                const damp = Math.pow(0.12, dt);
+                velY *= damp;
+                velX *= damp;
+                if (!focused && !reduced) {
+                    const idle = 0.09; // rad/s — keeps it alive when untouched
+                    velY += (idle - velY) * Math.min(1, dt * 0.6);
+                }
+                applySpin(velX * dt, velY * dt);
             }
 
-            // pull the camera in while a frame is selected
+            // cylinder: slide the body so the focused row sits on the eye line
+            lift += (targetLift - lift) * Math.min(1, dt * 5);
+            world.position.y = lift;
+
             const camTarget = focused ? CAM_NEAR : CAM_FAR;
-            camera.position.z += (camTarget - camera.position.z) * 0.06;
+            camera.position.z += (camTarget - camera.position.z) * Math.min(1, dt * 3.2);
 
             const hovered = (() => {
                 if (!pointerInside) return null;
@@ -379,19 +454,25 @@ export default function SphereGallery() {
 
             tiles.forEach((tile) => {
                 const mat = tile.material as THREE.MeshBasicMaterial;
-
-                // ready state, then dimmed if another tile holds focus
                 const ready = mat.map ? 1 : 0.18;
-                const dimmed = focused && tile !== focused ? 0.34 : 1;
-                mat.opacity += (ready * dimmed - mat.opacity) * 0.08;
+                const dimmed = focused && tile !== focused ? 0.3 : 1;
+                mat.opacity += (ready * dimmed - mat.opacity) * Math.min(1, dt * 6);
 
-                const target = tile === focused ? 1.75 : tile === hovered ? 1.28 : 1;
-                const s = tile.scale.x + (target - tile.scale.x) * 0.14;
-                tile.scale.setScalar(s);
+                const target = tile === focused ? 1.85 : tile === hovered ? 1.28 : 1;
+                tile.scale.setScalar(tile.scale.x + (target - tile.scale.x) * Math.min(1, dt * 9));
+
+                // The focused tile turns square-on to the camera as it comes
+                // forward, so it is read flat rather than at the body's angle.
+                // Cancelling the world rotation is exactly "face the viewer".
+                if (tile === focused) {
+                    wantQuat.copy(world.quaternion).invert();
+                } else {
+                    wantQuat.copy(restQuat(tile.userData.outward as THREE.Vector3));
+                }
+                tile.quaternion.slerp(wantQuat, Math.min(1, dt * 5));
             });
             canvas.style.cursor = dragging ? "grabbing" : hovered ? "pointer" : "grab";
 
-            // connector lines: fade in, run the pulse along, fade out, recycle
             spawnTimer -= dt;
             if (spawnTimer <= 0) {
                 spawnLink();
@@ -402,18 +483,13 @@ export default function SphereGallery() {
                 const link = links[i];
                 link.life += dt;
                 link.t = (link.t + dt * link.speed) % 1;
-
-                // triangular envelope: up, hold, down
                 const k = link.life / link.maxLife;
                 const env = k < 0.25 ? k / 0.25 : k > 0.75 ? Math.max(0, (1 - k) / 0.25) : 1;
-                // lines recede while a frame is being read
-                const focusFade = focused ? 0.25 : 1;
+                const focusFade = focused ? 0.2 : 1;
                 (link.line.material as THREE.LineBasicMaterial).opacity = env * 0.55 * focusFade;
                 (link.pulse.material as THREE.MeshBasicMaterial).opacity = env * focusFade;
-
                 link.curve.getPoint(link.t, link.pulse.position);
                 link.pulse.scale.setScalar(0.8 + Math.sin(link.t * Math.PI) * 0.6);
-
                 if (link.life >= link.maxLife) {
                     killLink(link);
                     links.splice(i, 1);
@@ -449,11 +525,10 @@ export default function SphereGallery() {
             renderer.dispose();
             if (canvas.parentNode === mount) mount.removeChild(canvas);
         };
-    }, []);
+    }, [isPhone]);
 
     return (
         <section className="relative w-full bg-black py-20 md:py-24 font-body overflow-hidden">
-            {/* faint red bloom behind the cloud so it sits in light, not a void */}
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0"
@@ -465,22 +540,19 @@ export default function SphereGallery() {
 
             <div className="relative mx-auto max-w-[1400px] px-6">
                 <header className="mb-6 text-center">
-                    <p className="font-mono text-[10px] md:text-xs tracking-[0.35em] uppercase text-tedx-red">
+                    <p className="font-mono text-[11px] md:text-xs tracking-[0.35em] uppercase text-tedx-red">
                         The Gallery
                     </p>
-                    <h2 className="mt-3 font-display text-[clamp(2rem,6vw,3.5rem)] font-black leading-none text-white">
+                    <h2 className="mt-3 font-display text-[clamp(2rem,6vw,3.5rem)] font-black leading-none text-white text-balance">
                         Moments, Connected
                     </h2>
-                    <p className="mx-auto mt-3 max-w-[560px] text-sm text-white/55">
-                        Drag to spin the sphere. Click a frame to bring it forward — click it
-                        again, or press Esc, to step back out.
+                    <p className="mx-auto mt-3 max-w-[560px] text-pretty text-sm text-white/65">
+                        Drag to spin. Tap a frame to bring it forward — tap it again, or press
+                        Esc, to step back.
                     </p>
                 </header>
 
-                <div
-                    ref={mountRef}
-                    className="h-[62vh] min-h-[420px] w-full select-none"
-                />
+                <div ref={mountRef} className="h-[62vh] min-h-[420px] w-full select-none" />
             </div>
         </section>
     );

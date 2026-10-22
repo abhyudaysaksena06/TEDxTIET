@@ -375,3 +375,20 @@
     content: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Editorial index numeral: an outlined figure used as structure, not a  */
+/* blurred watermark. Outline keeps it present without competing with    */
+/* the title for weight.                                                 */
+/* ------------------------------------------------------------------ */
+.about-index {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(235, 0, 40, 0.55);
+  letter-spacing: -0.04em;
+}
+
+@supports not ((-webkit-text-stroke: 1px red)) {
+  .about-index {
+    color: rgba(235, 0, 40, 0.35);
+  }
+}

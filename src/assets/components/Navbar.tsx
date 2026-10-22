@@ -89,19 +89,22 @@ export default function Navbar() {
             </Link>
 
             {/* Animated Hamburger Icon */}
-            <div
+            <button
+                type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="z-50 cursor-pointer flex flex-col gap-[6px] items-end group"
+                aria-label={isOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={isOpen}
+                className="z-50 -mr-2 flex h-11 w-11 cursor-pointer flex-col items-end justify-center gap-[6px] bg-transparent p-0 group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#eb0028]"
             >
                 <motion.div
                     animate={isOpen ? { rotate: 45, y: 4, width: "30px" } : { rotate: 0, y: 0, width: "30px" }}
-                    className={`h-[2px] transition-colors origin-center ${isOpen ? "bg-black" : "bg-white group-hover:bg-[#eb0028]"}`}
+                    className={`h-[2px] w-[30px] transition-colors origin-center ${isOpen ? "bg-black" : "bg-white group-hover:bg-[#eb0028]"}`}
                 />
                 <motion.div
                     animate={isOpen ? { rotate: -45, y: -4, width: "30px" } : { rotate: 0, y: 0, width: "20px" }}
-                    className={`h-[2px] transition-colors origin-center ${isOpen ? "bg-black" : "bg-white group-hover:bg-[#eb0028]"}`}
+                    className={`h-[2px] transition-colors origin-center ${isOpen ? "w-[30px] bg-black" : "w-[20px] bg-white group-hover:bg-[#eb0028]"}`}
                 />
-            </div>
+            </button>
 
             <AnimatePresence>
                 {isOpen && (
