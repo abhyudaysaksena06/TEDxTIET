@@ -3,70 +3,142 @@ import emailjs from "@emailjs/browser";
 import { useNavigate } from "react-router-dom";
 import "./queryform.css";
 
+/**
+ * Contact form.
+ *
+ * The EmailJS credentials used to be read as `process.env.REACT_APP_*`, which
+ * is Create-React-App syntax. This app is built by Vite, where `process` does
+ * not exist in the browser — so the first line of the submit handler threw
+ * `ReferenceError: process is not defined` and the message was never sent.
+ * Vite exposes env through `import.meta.env`, and only keys prefixed `VITE_`.
+ *
+ * Those keys are not set yet, so rather than failing at the moment someone has
+ * finished typing, the form checks up front and hands over a mailto: fallback
+ * that carries whatever they already wrote.
+ */
+
+const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const CONFIGURED = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY);
+
+const INBOX = "tedxtiet@thapar.edu";
+const RED = "#eb0028";
+const RED_INK = "#ff3b52"; // the brand red is under 4.5:1 at this size
+
 export default function ContactForm() {
-    const formRef = useRef();
+    const formRef = useRef(null);
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // { tone: 'ok' | 'error' | 'info', text: string } — shown in the form's own
+    // live region instead of alert(), which steals focus and reads badly on a
+    // phone
+    const [status, setStatus] = useState(null);
 
-    const sendEmail = (e) => {
+    /** build a mailto: that keeps what the person already typed */
+    const mailtoFallback = () => {
+        const data = new FormData(formRef.current);
+        const name = (data.get("name") || "").toString().trim();
+        const email = (data.get("email") || "").toString().trim();
+        const message = (data.get("message") || "").toString().trim();
+        const body = `${message}\n\n— ${name}${email ? ` (${email})` : ""}`;
+        return `mailto:${INBOX}?subject=${encodeURIComponent(
+            `Website enquiry from ${name || "the TEDxTIET site"}`
+        )}&body=${encodeURIComponent(body)}`;
+    };
+
+    const sendEmail = async (e) => {
         e.preventDefault();
+        setStatus(null);
+
+        if (!CONFIGURED) {
+            setStatus({
+                tone: "info",
+                text: "The form isn't connected to an inbox yet — opening your mail app with this message instead.",
+            });
+            window.location.href = mailtoFallback();
+            return;
+        }
+
         setIsSubmitting(true);
-
-        emailjs
-            .sendForm(
-                process.env.REACT_APP_EMAILJS_SERVICE_ID,
-                process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
-                formRef.current,
-                process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-            )
-            .then(
-                (response) => {
-                    setIsSubmitting(false);
-                    alert("Message sent successfully! ✅");
-                    console.log("SUCCESS", response);
-                    e.target.reset(); // Clear form
-                    navigate("/");    // Redirect to home
-                },
-                (error) => {
-                    setIsSubmitting(false);
-                    alert("Failed to send message. Please try again. ❌");
-                    console.error("FAILED", error);
-                }
-            );
+        try {
+            await emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current, PUBLIC_KEY);
+            setStatus({ tone: "ok", text: "Message sent. We'll reply to the address you gave." });
+            formRef.current.reset();
+            // give the confirmation a moment to be read before leaving
+            setTimeout(() => navigate("/"), 2200);
+        } catch (err) {
+            console.error("EmailJS send failed", err);
+            setStatus({
+                tone: "error",
+                text: `Couldn't send that. Try again, or email us directly at ${INBOX}.`,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const goHome = () => {
-        navigate("/");
-    };
+    const toneColor =
+        status?.tone === "ok" ? "#4ade80" : status?.tone === "error" ? RED_INK : "#d4d4d4";
 
     return (
         <div className="contact-form-container">
             <div className="login-box">
                 <h2>Contact Us</h2>
+
                 <form ref={formRef} onSubmit={sendEmail}>
+                    {/* every label is tied to its input by id — they were plain
+                        <label> elements with no association, so assistive tech
+                        announced the fields as unlabelled */}
                     <div className="user-box">
-                        <input type="text" name="name" required />
-                        <label>Name</label>
+                        <input type="text" id="contact-name" name="name" required autoComplete="name" />
+                        <label htmlFor="contact-name">Name</label>
                     </div>
 
                     <div className="user-box">
-                        <input type="email" name="email" required />
-                        <label>Email</label>
+                        <input type="email" id="contact-email" name="email" required autoComplete="email" />
+                        <label htmlFor="contact-email">Email</label>
                     </div>
 
                     <div className="user-box">
-                        <textarea name="message" required />
-                        <label>Message</label>
+                        <textarea id="contact-message" name="message" required />
+                        <label htmlFor="contact-message">Message</label>
                     </div>
 
                     <button type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Sending..." : "Send"}
                     </button>
+
+                    {/* announced to screen readers when it changes, rather than
+                        interrupting with alert() */}
+                    <p
+                        role="status"
+                        aria-live="polite"
+                        style={{
+                            minHeight: "1.2em",
+                            marginTop: "14px",
+                            fontSize: "0.8rem",
+                            lineHeight: 1.5,
+                            color: toneColor,
+                        }}
+                    >
+                        {status?.text || ""}
+                    </p>
+
+                    <p style={{ marginTop: "4px", fontSize: "0.72rem", color: "#9a9a9a" }}>
+                        Prefer email?{" "}
+                        <a href={`mailto:${INBOX}`} style={{ color: RED_INK }}>
+                            {INBOX}
+                        </a>
+                    </p>
                 </form>
             </div>
-            
+
+            {/* the accessible name belongs on the control, not on the <svg> inside it */}
             <button
-                onClick={goHome}
+                type="button"
+                onClick={() => navigate("/")}
+                aria-label="Back to home"
                 style={{
                     position: "fixed",
                     bottom: "20px",
@@ -78,14 +150,21 @@ export default function ContactForm() {
                     height: "50px",
                     padding: 0,
                     zIndex: 1000,
-                    transition: "transform 0.3s ease"
+                    transition: "transform 0.3s ease",
                 }}
-                onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.1)"}
-                onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
+                onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
-                <svg width="50" height="50" viewBox="0 0 50 50" aria-label="Back">
-                    <circle cx="25" cy="25" r="24" fill="#E02424" />
-                    <path d="M29 16 L20 25 L29 34" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="50" height="50" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                    <circle cx="25" cy="25" r="24" fill={RED} />
+                    <path
+                        d="M29 16 L20 25 L29 34"
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
                     <line x1="21" y1="25" x2="36" y2="25" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
                 </svg>
             </button>
