@@ -400,7 +400,7 @@ export default function Team() {
                     <p>Want to join the next one?</p>
                     <a
                         href="mailto:tedxtiet@thapar.edu"
-                        className="group inline-flex items-center gap-2 transition-colors duration-300 hover:text-white"
+                        className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
                     >
                         tedxtiet@thapar.edu
                         <span

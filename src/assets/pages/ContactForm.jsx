@@ -84,7 +84,7 @@ export default function ContactForm() {
     return (
         <div className="contact-form-container">
             <div className="login-box">
-                <h2>Contact Us</h2>
+                <h1>Contact Us</h1>
 
                 <form ref={formRef} onSubmit={sendEmail}>
                     {/* every label is tied to its input by id — they were plain

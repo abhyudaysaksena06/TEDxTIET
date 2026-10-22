@@ -562,6 +562,9 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
     if (fullPage) {
         return (
             <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
+                {/* the page is a WebGL canvas, so it carried no heading at all
+                    for search engines or assistive tech */}
+                <h1 className="sr-only">Gallery — TEDxTIET in photographs</h1>
                 <div
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0"

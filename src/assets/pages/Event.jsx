@@ -45,7 +45,7 @@ const Event = () => {
         <div className="cursor-circle"></div>
 
         <div className="event-content">
-          <h2 className="event-title">RED DAY 2026</h2>
+          <h1 className="event-title">RED DAY 2026</h1>
           <p className="event-tagline">Moments That Shape Us</p>
 
           <div className="event-info">

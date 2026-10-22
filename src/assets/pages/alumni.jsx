@@ -60,6 +60,7 @@ function AlumniCard({ name, url, img }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`${name} on LinkedIn`}
             style={styles.linkedinLink}
             onClick={(e) => e.stopPropagation()}
           >

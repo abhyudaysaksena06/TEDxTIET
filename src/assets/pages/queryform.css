@@ -21,7 +21,8 @@
     border-radius: 10px;
 }
 
-.login-box h2 {
+/* the heading is an h1 now — the page had none */
+.login-box h1 {
     margin: 0 0 30px;
     padding: 0;
     color: #fff;

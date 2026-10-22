@@ -230,7 +230,12 @@ export default function Footer() {
                 <p>Independently organised · Thapar Institute, Patiala</p>
                 <p className="flex items-center gap-4">
                     <span>© {new Date().getFullYear()} TEDxTIET</span>
-                    <a href="#top" className="transition-colors duration-300 hover:text-[#ebe9e4]">
+                    {/* inline-block + padding so the hit area clears the 24px
+                        minimum; the text alone was 15px tall */}
+                    <a
+                        href="#top"
+                        className="inline-block py-[5px] transition-colors duration-300 hover:text-[#ebe9e4]"
+                    >
                         Back to top ↑
                     </a>
                 </p>

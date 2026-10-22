@@ -340,9 +340,10 @@ export default function About({ controlledSection = null }) {
           <p className="font-mono text-[11px] tracking-[0.25em] font-semibold text-tedx-red m-0">
             WHO WE ARE
           </p>
-          <h1 className="font-display font-black tracking-[-0.01em] leading-[0.85] text-[clamp(2.25rem,2.6vw,3.4rem)] whitespace-nowrap text-white mt-2">
+          {/* h2, not h1: this is a section of the home page, whose h1 is the hero */}
+          <h2 className="font-display font-black tracking-[-0.01em] leading-[0.85] text-[clamp(2.25rem,2.6vw,3.4rem)] whitespace-nowrap text-white mt-2">
             ABOUT US
-          </h1>
+          </h2>
           <p className="hidden md:block mt-4 max-w-[30ch] text-sm leading-[1.6] text-white/60">
             From a global stage to a Patiala auditorium — the same idea,
             scaled to where you're standing.
