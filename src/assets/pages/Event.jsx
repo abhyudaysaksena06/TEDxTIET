@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import "./Event.css";
 
+/** Registration is handled on Unstop for this edition. */
+const REGISTRATION_URL =
+  "https://unstop.com/o/J4DHu2p?utm_medium=Share&utm_source=tedxsoc5964&utm_campaign=Competitions";
+
 const Event = () => {
-  const navigate = useNavigate();
 
   useEffect(() => {
     const cursor = document.querySelector(".cursor-circle");
@@ -65,12 +67,18 @@ const Event = () => {
             <p>Speaker lineup will be revealed soon — stay tuned!</p>
           </div> */}
 
-          <button
+          {/* A real anchor, not navigate(). React Router's navigate() treats
+              its argument as an in-app path, so the absolute URL was pushed
+              onto the current route — the only call to action on this page
+              dead-ended at /event/https:/unstop.com/... and rendered the 404. */}
+          <a
             className="register-btn"
-            onClick={() => navigate("https://unstop.com/o/J4DHu2p?utm_medium=Share&utm_source=tedxsoc5964&utm_campaign=Competitions")}
+            href={REGISTRATION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             Register Now
-          </button>
+          </a>
         </div>
       </section>
     </div>
