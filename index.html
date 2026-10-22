@@ -19,14 +19,22 @@
       property="og:description"
       content="An independently organised TED event at Thapar Institute, Patiala. Ideas worth spreading, on stage."
     />
-    <meta property="og:image" content="/HOME_BG.webp" />
+    <!-- absolute, not "/HOME_BG.webp": OG scrapers do not resolve relative
+         paths, so every link preview was coming through without an image -->
+    <meta property="og:image" content="https://tedxtiet-gamma.vercel.app/HOME_BG.webp" />
+    <meta property="og:image:width" content="1375" />
+    <meta property="og:image:height" content="768" />
+    <meta property="og:image:alt" content="The TEDxTIET stage, lit red." />
+    <meta property="og:url" content="https://tedxtiet-gamma.vercel.app/" />
+    <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TEDxTIET 2026" />
     <meta
       name="twitter:description"
       content="An independently organised TED event at Thapar Institute, Patiala."
     />
-    <meta name="twitter:image" content="/HOME_BG.webp" />
+    <meta name="twitter:image" content="https://tedxtiet-gamma.vercel.app/HOME_BG.webp" />
+    <link rel="canonical" href="https://tedxtiet-gamma.vercel.app/" />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
 
@@ -35,7 +43,7 @@
     <link rel="preload" as="image" href="/HOME_BG.webp" fetchpriority="high" />
     <link rel="preload" as="image" href="/Speakers/dikshant2.webp" />
 
-    <title>TEDxTIET</title>
+    <title>TEDxTIET 2026 — Ideas worth spreading, on stage</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
