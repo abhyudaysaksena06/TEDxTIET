@@ -52,6 +52,31 @@ html {
     border: 0;
 }
 
+/* Team page portrait strip. One transform animation on the track, which the
+   compositor can run without touching layout — the component it replaced drove
+   twenty panels from rAF and set width/height on each one every frame.
+   The track holds the list twice, so -50% lands exactly on the seam. */
+.team-strip__track {
+    animation: team-strip-drift 120s linear infinite;
+}
+
+.team-strip:hover .team-strip__track {
+    animation-play-state: paused;
+}
+
+@keyframes team-strip-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* the global rule below collapses durations, which would snap this to its
+       end state; stop it at the start instead */
+    .team-strip__track {
+        animation: none !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
