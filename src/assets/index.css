@@ -12,6 +12,32 @@
     --font-display: "Big Shoulders Display", sans-serif;
     --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+    /* The team page uses font-headline / font-label / text-primary throughout.
+       None of them were ever defined, so every one of those rules silently did
+       nothing — headline type fell through to the body font by luck, and
+       text-primary rendered as inherited white instead of the brand red. */
+    --font-headline: "Anton", sans-serif;
+    --font-label: "IBM Plex Mono", ui-monospace, monospace;
+    --color-primary: #eb0028;
+}
+
+/* The hover portraits on the team page ask for `animate-in fade-in zoom-in`,
+   which comes from the tailwindcss-animate plugin — not installed, so the
+   cards were snapping in with no transition at all. */
+@keyframes team-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.team-pop {
+    animation: team-pop-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 body {
@@ -52,27 +78,25 @@ html {
     border: 0;
 }
 
-/* Team page portrait strip. One transform animation on the track, which the
-   compositor can run without touching layout — the component it replaced drove
-   twenty panels from rAF and set width/height on each one every frame.
-   The track holds the list twice, so -50% lands exactly on the seam. */
-.team-strip__track {
-    animation: team-strip-drift 120s linear infinite;
+/* Film grain for the gallery. An inline SVG feTurbulence is used rather than a
+   bitmap so it costs no request, and it is animated by nudging the sampling
+   window instead of regenerating noise. */
+.gallery-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+    animation: gallery-grain-shift 700ms steps(4) infinite;
 }
 
-.team-strip:hover .team-strip__track {
-    animation-play-state: paused;
-}
-
-@keyframes team-strip-drift {
-    from { transform: translate3d(0, 0, 0); }
-    to   { transform: translate3d(-50%, 0, 0); }
+@keyframes gallery-grain-shift {
+    0% { background-position: 0 0; }
+    25% { background-position: -40px 20px; }
+    50% { background-position: 30px -30px; }
+    75% { background-position: -20px -10px; }
+    100% { background-position: 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    /* the global rule below collapses durations, which would snap this to its
-       end state; stop it at the start instead */
-    .team-strip__track {
+    .gallery-grain {
         animation: none !important;
     }
 }

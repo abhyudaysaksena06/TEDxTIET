@@ -157,6 +157,41 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         scene.add(world);
 
         const disposables: { dispose: () => void }[] = [];
+
+        // ---------- dust field ----------
+        // The globe used to hang in flat black, which read as "nothing loaded".
+        // A shell of faint points well outside the tile radius gives the scene
+        // depth and parallax: it counter-rotates slowly, so spinning the globe
+        // reads as motion through a space rather than a texture turning.
+        // One BufferGeometry + PointsMaterial — a single draw call.
+        const DUST_COUNT = CYL ? 320 : 700;
+        const dustGeo = new THREE.BufferGeometry();
+        {
+            const pos = new Float32Array(DUST_COUNT * 3);
+            for (let i = 0; i < DUST_COUNT; i++) {
+                // random direction, pushed into a shell beyond the photos
+                const u = Math.random() * 2 - 1;
+                const theta = Math.random() * Math.PI * 2;
+                const r = RADIUS * (1.9 + Math.random() * 2.4);
+                const s = Math.sqrt(1 - u * u);
+                pos[i * 3] = Math.cos(theta) * s * r;
+                pos[i * 3 + 1] = u * r;
+                pos[i * 3 + 2] = Math.sin(theta) * s * r;
+            }
+            dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        }
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xff5068,
+            size: 0.055,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.5,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+        });
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
+        disposables.push(dustGeo, dustMat);
         const positions = CYL
             ? cylinderPoints(SLOT_COUNT, RADIUS, 5, TILE * 1.9)
             : fibonacciSphere(SLOT_COUNT, RADIUS);
@@ -271,6 +306,16 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         let targetLift = 0; // cylinder: vertical shift that centres the tile
         let lift = 0;
 
+        // Cylinder only: dragging up/down slides the body vertically so the top
+        // and bottom rows are reachable. It used to be locked to one axis, so
+        // on a phone two of the five rows could never be brought into view.
+        // Panning (not tilting) is the right move for a cylinder — tipping it
+        // would break the upright columns.
+        const ringYs = positions.map((p) => p.y);
+        const PAN_LIMIT = CYL ? (Math.max(...ringYs) - Math.min(...ringYs)) / 2 + TILE : 0;
+        let panY = 0;
+        let velPan = 0; // world units / second
+
         const focusTile = (tile: THREE.Mesh) => {
             focused = tile;
             aligning = true;
@@ -320,7 +365,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
             const step = e.deltaMode === 1 ? e.deltaY * 18 : e.deltaY; // lines vs pixels
-            zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * Math.exp(step * 0.0012)));
+            // doubled from 0.0012 — a wheel notch now covers twice the range
+            zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom * Math.exp(step * 0.0024)));
         };
         canvas.addEventListener("wheel", onWheel, { passive: false });
 
@@ -370,11 +416,21 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             // move the body with the finger, right now — this is what reads as
             // grabbing it. Velocity is recorded only for the throw on release.
             const ry = dx * SENS;
-            const rx = CYL ? 0 : dy * SENS; // the cylinder spins on one axis only
+            const rx = CYL ? 0 : dy * SENS; // a cylinder must not tip; it pans
             applySpin(rx, ry);
 
             velY = ry / dt;
             velX = rx / dt;
+
+            if (CYL) {
+                // px -> world units at the body's depth, so the rows track the
+                // finger exactly rather than at some arbitrary rate
+                const visibleH = 2 * camera.position.z * Math.tan((45 / 2) * (Math.PI / 180));
+                const dWorld = (dy / height) * visibleH;
+                const next = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panY + dWorld));
+                velPan = (next - panY) / dt;
+                panY = next;
+            }
 
             lastX = e.clientX;
             lastY = e.clientY;
@@ -442,6 +498,9 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         // ---------- loop ----------
         const clock = new THREE.Clock();
         const wantQuat = new THREE.Quaternion();
+        // scratch for the focused tile's swing-twist decomposition
+        const rel = new THREE.Quaternion();
+        const twist = new THREE.Quaternion();
         let spawnTimer = 0;
         let frameId = 0;
 
@@ -461,15 +520,30 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 velY *= damp;
                 velX *= damp;
                 if (!focused && !reduced) {
-                    const idle = 0.09; // rad/s — keeps it alive when untouched
+                    // rad/s. At the old 0.09 a full revolution took 70 seconds,
+                    // so the globe looked frozen; this brings it to ~28s, slow
+                    // enough to read a frame but clearly alive.
+                    const idle = 0.22;
                     velY += (idle - velY) * Math.min(1, dt * 0.6);
                 }
                 applySpin(velX * dt, velY * dt);
             }
 
+            // dust drifts the other way and a touch slower, so the globe reads
+            // as turning inside a space rather than against a flat backdrop
+            if (!reduced) {
+                dust.rotation.y -= dt * 0.035;
+                dust.rotation.x += dt * 0.008;
+            }
+
             // cylinder: slide the body so the focused row sits on the eye line
             lift += (targetLift - lift) * Math.min(1, dt * 5);
-            world.position.y = lift;
+            if (CYL && !dragging) {
+                // the vertical throw bleeds off on the same curve as the spin
+                velPan *= Math.pow(0.12, dt);
+                panY = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panY + velPan * dt));
+            }
+            world.position.y = lift + (focused ? 0 : panY);
 
             const camTarget = (focused ? CAM_NEAR : CAM_FAR) * zoom;
             camera.position.z += (camTarget - camera.position.z) * Math.min(1, dt * 3.2);
@@ -491,10 +565,24 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 tile.scale.setScalar(tile.scale.x + (target - tile.scale.x) * Math.min(1, dt * 9));
 
                 // The focused tile turns square-on to the camera as it comes
-                // forward, so it is read flat rather than at the body's angle.
-                // Cancelling the world rotation is exactly "face the viewer".
+                // forward. Cancelling the world rotation faces the viewer, but
+                // on its own it also forces world-up, and the roll between that
+                // and the tile's resting orientation was up to 180 degrees —
+                // which is the "flip" you saw before the photo settled.
+                // Swing-twist: keep the camera-facing swing, then re-apply the
+                // tile's OWN roll about the view axis, so the move is the
+                // shortest one that squares it up and never tumbles.
                 if (tile === focused) {
                     wantQuat.copy(world.quaternion).invert();
+                    rel.copy(wantQuat).invert().multiply(
+                        restQuat(tile.userData.outward as THREE.Vector3)
+                    );
+                    // twist component about local Z (the view axis)
+                    twist.set(0, 0, rel.z, rel.w);
+                    if (twist.lengthSq() > 1e-8) {
+                        twist.normalize();
+                        wantQuat.multiply(twist);
+                    }
                 } else {
                     wantQuat.copy(restQuat(tile.userData.outward as THREE.Vector3));
                 }
@@ -561,20 +649,72 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
     // viewport. Embedded elsewhere it keeps the titled section treatment.
     if (fullPage) {
         return (
-            <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
+            <div className="relative h-[100dvh] w-full overflow-hidden bg-[#070406]">
                 {/* the page is a WebGL canvas, so it carried no heading at all
                     for search engines or assistive tech */}
                 <h1 className="sr-only">Gallery — TEDxTIET in photographs</h1>
+
+                {/* ---- ground ----
+                    This was a single weak red radial on flat #000, which left
+                    the globe floating in an empty box. Four cheap layers now
+                    build a lit room: a warm core behind the sphere, a cool
+                    counter-light from the lower left, a faint grid for scale,
+                    and a vignette to pull the eye to the middle. */}
                 <div
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-0"
                     style={{
                         background:
-                            "radial-gradient(45% 50% at 50% 50%, rgba(235,0,40,0.18) 0%, rgba(0,0,0,0) 70%)",
+                            "radial-gradient(55% 60% at 50% 46%, rgba(235,0,40,0.26) 0%, rgba(120,0,24,0.10) 38%, rgba(0,0,0,0) 72%)",
                     }}
                 />
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(40% 45% at 12% 88%, rgba(60,80,170,0.16) 0%, rgba(0,0,0,0) 70%)",
+                    }}
+                />
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 opacity-[0.045]"
+                    style={{
+                        backgroundImage:
+                            "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+                        backgroundSize: "clamp(56px, 6vw, 96px) clamp(56px, 6vw, 96px)",
+                        maskImage:
+                            "radial-gradient(70% 70% at 50% 50%, #000 0%, transparent 100%)",
+                        WebkitMaskImage:
+                            "radial-gradient(70% 70% at 50% 50%, #000 0%, transparent 100%)",
+                    }}
+                />
+
                 <div ref={mountRef} className="h-full w-full select-none" />
-                <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center font-mono text-[11px] tracking-[0.3em] uppercase text-white/60">
+
+                {/* vignette sits ABOVE the canvas so it darkens the tiles at the
+                    edges too, which is what makes the globe read as spherical */}
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(78% 78% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%)",
+                    }}
+                />
+                {/* film grain, to match the reel's language on the home page */}
+                <div
+                    aria-hidden="true"
+                    className="gallery-grain pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-overlay"
+                />
+
+                {/* ---- HUD ---- */}
+                <div className="pointer-events-none absolute inset-x-0 top-20 flex justify-between px-5 font-mono text-[10px] uppercase tracking-[0.28em] text-white/45 md:px-8">
+                    <span>TEDxTIET · Patiala</span>
+                    <span className="hidden sm:inline">35 frames</span>
+                </div>
+
+                <p className="pointer-events-none absolute inset-x-0 bottom-6 px-5 text-center font-mono text-[11px] tracking-[0.3em] uppercase text-white/60">
                     Drag to spin · Scroll to zoom · Tap a frame
                 </p>
             </div>

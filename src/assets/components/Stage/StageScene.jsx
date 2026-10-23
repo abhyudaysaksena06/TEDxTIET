@@ -38,9 +38,14 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     let width = mount.clientWidth
     let height = mount.clientHeight
 
+    // Where the wordmark lives. The camera aims AT it, so the logo projects to
+    // the exact centre of the canvas — it used to look at (0, 1.2, 0) while the
+    // group sat at y 1.15, leaving the wordmark permanently off-centre.
+    const LOGO_AT = new THREE.Vector3(0, 1.15, 2.4)
+
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100)
     camera.position.set(0, 1.6, 13)
-    camera.lookAt(0, 1.2, 0)
+    camera.lookAt(LOGO_AT)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setClearColor(0x000000, 0)
@@ -290,19 +295,27 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     canvas.addEventListener('pointerup', onPointerUp)
     canvas.addEventListener('pointercancel', onPointerUp)
 
+    // The canvas was sized once from mount.clientHeight and then only on
+    // window.resize. But this element's box is set by useStageRect AFTER the
+    // first paint, and changes again whenever the stage scale does — so the
+    // canvas kept a stale size and aspect, and the wordmark rendered ~200px
+    // above the drawn screen on wide viewports. A ResizeObserver tracks the
+    // element itself, which is what actually determines the projection.
     const handleResize = () => {
       width = mount.clientWidth
       height = mount.clientHeight
+      if (!width || !height) return
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height)
     }
-    window.addEventListener('resize', handleResize)
+    const ro = new ResizeObserver(handleResize)
+    ro.observe(mount)
 
     return () => {
       disposed = true
       cancelAnimationFrame(frameId)
-      window.removeEventListener('resize', handleResize)
+      ro.disconnect()
       window.removeEventListener('pointermove', onMouseTrack)
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointermove', onPointerMove)

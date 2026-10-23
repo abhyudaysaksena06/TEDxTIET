@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 /**
  * Footer — rebuilt to the structure of mrdev4u.com, measured from the live page:
  *
- *   footer            min-h-svh, flex column, #111 ground with a faint grid
+ *   footer            full-height from md up, black ground with a faint grid
  *   ├─ top row        3 bordered cells, each with a small mono meta line above
  *   │                 an oversized Anton link; hovering wipes the cell with an
  *   │                 ink fill from the bottom and inverts the type
@@ -17,7 +17,10 @@ import { Link } from "react-router-dom";
  * orange. Display face is Anton, which is also the hero's.
  */
 
-const PAPER = "#111111";
+// #000, not #111: every other page on this site sits on pure black, and a
+// slightly-lighter slab made the footer read as a separate document glued
+// to the bottom. Same ground = one continuous page.
+const PAPER = "#000000";
 const INK = "#ebe9e4";
 const RULE = "#2c2c2c";
 const MUTED = "#8a8a8a";
@@ -89,9 +92,22 @@ function Wordmark({ text }: { text: string }) {
 export default function Footer() {
     return (
         <footer
-            className="relative z-10 flex min-h-svh w-full flex-col overflow-hidden"
+            className="relative z-10 flex w-full flex-col overflow-hidden md:min-h-svh"
             style={{ backgroundColor: PAPER, color: INK }}
         >
+            {/* A deliberate seam. Sharing the page's black ground is what makes
+                the footer continuous; this hairline — the same red as the
+                navbar wordmark and the section accents — is what stops it
+                reading as the page simply running out. */}
+            <div
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 h-px"
+                style={{
+                    background:
+                        "linear-gradient(to right, transparent, rgba(235,0,40,0.65) 18%, rgba(235,0,40,0.65) 82%, transparent)",
+                }}
+            />
+
             {/* faint grid ground */}
             <div
                 aria-hidden="true"
@@ -115,14 +131,17 @@ export default function Footer() {
                         style={{ borderColor: RULE }}
                     >
                         {/* ink wipe, bottom-up, on hover */}
+                        {/* the wipe fills with the brand red rather than ink:
+                            these labels are white, so an ink fill meant the type
+                            had to invert to black on every hover */}
                         <span
                             aria-hidden="true"
                             className="pointer-events-none absolute inset-0 origin-bottom scale-y-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100"
-                            style={{ backgroundColor: INK }}
+                            style={{ backgroundColor: "#eb0028" }}
                         />
 
                         <span
-                            className="relative z-10 hidden truncate font-mono text-[11px] uppercase tracking-[0.12em] transition-colors duration-300 group-hover:text-[#111111] sm:block"
+                            className="relative z-10 hidden truncate font-mono text-[11px] uppercase tracking-[0.12em] transition-colors duration-300 group-hover:text-white sm:block"
                             style={{ color: MUTED }}
                         >
                             {l.meta}
@@ -130,7 +149,7 @@ export default function Footer() {
 
                         <Link
                             to={l.href}
-                            className="relative z-10 mt-auto block truncate font-['Anton'] uppercase leading-none tracking-[0.005em] transition-colors duration-300 group-hover:text-[#111111]"
+                            className="relative z-10 mt-auto block truncate font-['Anton'] uppercase leading-none tracking-[0.005em] transition-colors duration-300 group-hover:text-white"
                             style={{ fontSize: "min(7.5vw, 9.5svh)", color: INK }}
                         >
                             {l.label}
@@ -140,7 +159,7 @@ export default function Footer() {
             </div>
 
             {/* ---- middle: statement | contact stack ---- */}
-            <div className="relative flex flex-1 flex-col gap-8 px-4 py-[3svh] md:grid md:grid-cols-12 md:gap-6 md:px-6">
+            <div className="relative flex flex-col gap-8 px-4 py-10 md:flex-1 md:grid md:grid-cols-12 md:gap-6 md:px-6 md:py-[3svh]">
                 <h2
                     className="font-['Anton'] uppercase leading-[0.92] tracking-[0.005em] md:col-span-7"
                     style={{ fontSize: "min(10.5vw, 13svh)" }}

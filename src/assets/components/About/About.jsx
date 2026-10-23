@@ -448,22 +448,27 @@ export default function About({ controlledSection = null }) {
                   watermark, and the counter appears once (in the rail) instead
                   of twice. */}
               <article className="relative">
-                <div className="flex items-baseline gap-5 md:gap-8">
+                {/* Two columns, two rows. The index and the title share row 2,
+                    so `items-baseline` sits "01" on the SAME line as "TED",
+                    with the tag stacked directly above the title in row 1.
+                    Previously the index and the tag-plus-title stack were
+                    baseline-aligned as siblings, which lined "01" up with the
+                    small tag and left the title dropping away below it. */}
+                <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-5 md:gap-x-8">
+                  <p className="col-start-2 row-start-1 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-tedx-red">
+                    {current.tag}
+                  </p>
+
                   <span
                     aria-hidden="true"
-                    className="about-index shrink-0 font-display font-black leading-none select-none text-[clamp(56px,9vw,120px)]"
+                    className="about-index col-start-1 row-start-2 shrink-0 font-display font-black leading-none select-none text-[clamp(56px,9vw,120px)]"
                   >
                     {current.index}
                   </span>
 
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-tedx-red">
-                      {current.tag}
-                    </p>
-                    <h2 className="mt-2 font-display font-black tracking-[-0.015em] leading-[0.88] text-balance text-white text-[clamp(2.5rem,9vw,3.25rem)] md:text-[clamp(3rem,4.6vw,4.75rem)]">
-                      {renderSectionTitle(current.title)}
-                    </h2>
-                  </div>
+                  <h2 className="col-start-2 row-start-2 mt-2 min-w-0 font-display font-black tracking-[-0.015em] leading-[0.88] text-balance text-white text-[clamp(2.5rem,9vw,3.25rem)] md:text-[clamp(3rem,4.6vw,4.75rem)]">
+                    {renderSectionTitle(current.title)}
+                  </h2>
                 </div>
 
                 {/* red rule carries the eye from the title into the body */}

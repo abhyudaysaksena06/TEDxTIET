@@ -2,9 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import StageScene from "./StageScene";
 import useScrollProgress from "../../hooks/useScrollProgress";
+import { TOP, BOTTOM } from "../ScreenOutline";
+
+/**
+ * The centre of the drawn screen, in % of the stage box, derived from the same
+ * measured keystones the outline is built from. The logo is placed here rather
+ * than at hand-tuned pixel offsets, so it stays centred on the screen at every
+ * viewport instead of drifting as the crop changes.
+ */
+const meanY = (pts: [number, number][]) => pts.reduce((s, p) => s + p[1], 0) / pts.length;
+export const OUTLINE_CENTER = {
+    x: (TOP[0][0] + TOP[TOP.length - 1][0]) / 2,
+    y: (meanY(TOP) + meanY(BOTTOM)) / 2,
+};
 
 // the logo holds this pose for the whole sequence — it no longer travels to a
-// corner; it simply fades out to hand the screen over to the reel, then back in
+// corner; it simply fades out to hand the screen over to the reel, then back in.
+// x/y are the old hand-tuned fallback, used only until the stage is measured.
 export const START_TRANSFORM = { x: 20.8, y: -48.8, scale: 0.8536 };
 export const FROZEN_ROTATION = { x: 0.0424, y: 0.0392 };
 
@@ -26,6 +40,9 @@ interface Props {
     /** stage width / desktop reference width — keeps the logo proportional
      *  to the drawn screen instead of a fixed pixel size */
     scaleK?: number;
+    /** the stage box in px, so the logo can be centred on the drawn screen */
+    stageW?: number;
+    stageH?: number;
     /** false until the user clicks the hero: the reel sequence is dormant */
     active?: boolean;
     onSelect?: () => void;
@@ -34,7 +51,14 @@ interface Props {
 /** half of the title crossfade: out, swap, back in */
 const SWAP_FADE_MS = 420;
 
-export default function ScrollLogo({ scrollRootRef, active = false, onSelect, scaleK = 1 }: Props) {
+export default function ScrollLogo({
+    scrollRootRef,
+    active = false,
+    onSelect,
+    scaleK = 1,
+    stageW = 0,
+    stageH = 0,
+}: Props) {
     const progress = useScrollProgress(scrollRootRef);
     const frozenRef = useRef({ frozen: false, x: FROZEN_ROTATION.x, y: FROZEN_ROTATION.y });
     // "as soon as I scroll" — any progress at all freezes cursor/drag rotation
@@ -49,9 +73,17 @@ export default function ScrollLogo({ scrollRootRef, active = false, onSelect, sc
     // can't add lag to the scroll-driven fade later on
     const [swapActive, setSwapActive] = useState(false);
 
+    // `titleMode` is read through a ref, NOT listed as a dependency. It used to
+    // be one, so calling setTitleMode below re-ran this effect, and the cleanup
+    // cancelled its own still-pending `setSwapActive(false)` timer. swapActive
+    // then stayed true forever, and since onSelect is suppressed while it is
+    // true, the title could never be clicked back to TEDxTIET.
+    const modeRef = useRef(titleMode);
+    modeRef.current = titleMode;
+
     useEffect(() => {
         const wanted = active ? 'archive' : 'logo';
-        if (wanted === titleMode) return;
+        if (wanted === modeRef.current) return;
 
         setSwapActive(true);
         setSwapping(true);
@@ -66,7 +98,7 @@ export default function ScrollLogo({ scrollRootRef, active = false, onSelect, sc
             clearTimeout(swap);
             clearTimeout(done);
         };
-    }, [active, titleMode]);
+    }, [active]);
 
     // The logo never leaves its pose — it fades out to clear the screen for the
     // reel, holds hidden, then fades back in. Three phases:
@@ -86,8 +118,11 @@ export default function ScrollLogo({ scrollRootRef, active = false, onSelect, sc
 
     // tuned on the desktop stage; scale with it so phones get the same composition
     const k = scaleK > 0 ? scaleK : 1;
-    const x = START_TRANSFORM.x * k;
-    const y = START_TRANSFORM.y * k;
+    // The wrapper is inset-0 of the stage, so its untransformed centre is the
+    // stage centre; this translation moves it onto the drawn screen's centre.
+    // (CSS applies `scale` before `translate`, so the offset is NOT scaled.)
+    const x = stageW ? ((OUTLINE_CENTER.x - 50) / 100) * stageW : START_TRANSFORM.x * k;
+    const y = stageH ? ((OUTLINE_CENTER.y - 50) / 100) * stageH : START_TRANSFORM.y * k;
     const scale = START_TRANSFORM.scale * k;
     // during the swap the title dips to zero regardless of scroll state
     const shown = swapping ? 0 : opacity;

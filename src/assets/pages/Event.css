@@ -112,3 +112,11 @@ body {
   max-width: 1200px;
   margin: 0 auto;
 }
+
+/* The glow that trails the pointer is meaningless without a pointer, and on a
+   phone it just parks itself off-screen at whatever the last touch was. */
+@media (hover: none), (pointer: coarse) {
+    .cursor-circle {
+        display: none;
+    }
+}

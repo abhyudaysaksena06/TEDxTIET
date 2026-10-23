@@ -12,8 +12,11 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 400px;
-    padding: 40px;
+    /* was a flat 400px, which is wider than a 375px phone — the panel hung off
+       both edges. It now takes the viewport minus a gutter until it can have
+       its full width. Padding shrinks with it so the fields keep their room. */
+    width: min(400px, calc(100vw - 2.5rem));
+    padding: clamp(24px, 6vw, 40px);
     transform: translate(-50%, -50%);
     background: rgba(0, 0, 0, .5);
     box-sizing: border-box;

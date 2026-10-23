@@ -179,6 +179,8 @@ function HomePage() {
                                     scrollRootRef={scrollRootRef}
                                     active={archiveOpen}
                                     scaleK={stage.k}
+                                    stageW={stage.width}
+                                    stageH={stage.height}
                                     onSelect={() => {
                                         // collapsing a 700vh track from halfway down would
                                         // yank the page, so close from the top
@@ -202,7 +204,7 @@ function HomePage() {
                                     Exploring the boundaries of digital space and time.
                                 </p>
                                 <p className="text-5xl font-bold uppercase italic leading-none sm:text-6xl">
-                                    2026
+                                    20<span className="text-[#eb0028]">26</span>
                                 </p>
                             </motion.div>
                         </div>
