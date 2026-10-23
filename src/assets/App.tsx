@@ -5,7 +5,8 @@ import Navbar from './components/Navbar';
 import ScrollLogo from './components/Stage/ScrollLogo';
 import ScreenOutline from './components/ScreenOutline';
 import ReelOnScreen from './components/Reel/ReelOnScreen';
-import CarpetFigure from './components/Stage/CarpetFigure';
+import CarpetFigure, { CARPET, FIGURE_H } from './components/Stage/CarpetFigure';
+import FigurePlacer, { type Placement } from './components/Stage/FigurePlacer';
 import RegistrationSection from './components/RegistrationSection';
 import AboutSection from './components/About/AboutSection';
 import ImpactSection from './components/Impact/ImpactSection';
@@ -100,6 +101,7 @@ const HERO_IMAGE_ASPECT = 1375 / 768;
 function HomePage() {
     const scrollRootRef = useRef<HTMLDivElement>(null);
     const stageHostRef = useRef<HTMLDivElement>(null);
+    const stageBoxRef = useRef<HTMLDivElement>(null);
     // phones fit the photo to the WIDTH so it isn't squeezed into a tall
     // viewport; wider screens cover the box as before
     const isPhone = useIsPhone();
@@ -115,6 +117,17 @@ function HomePage() {
     // no card anywhere near the middle
     const [centreSpeaker, setCentreSpeaker] = useState(0);
     const [speakerCentred, setSpeakerCentred] = useState(false);
+
+    // ?place=1 opens the placement picker: click the stage to stand the
+    // speaker somewhere and read the stage-relative coordinates back out
+    const placing =
+        typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).has('place');
+    const [placement, setPlacement] = useState<Placement>({
+        x: CARPET.x,
+        y: CARPET.y,
+        h: FIGURE_H,
+    });
 
     // the hero only has something to pin against when it owns a full screen
     const heroPinned = !(isPhone && !archiveOpen);
@@ -173,6 +186,7 @@ function HomePage() {
                                 this one rect, so the outline sits on the venue screen at
                                 every viewport instead of drifting as the crop changes. */}
                             <div
+                                ref={stageBoxRef}
                                 className="absolute overflow-hidden"
                                 style={{
                                     left: stage.left,
@@ -208,7 +222,7 @@ function HomePage() {
                                     scaleK={isPhone ? 0.9 : stage.k}
                                     stageW={stage.width}
                                     stageH={stage.height}
-                                    onSelect={() => {
+                                    onSelect={placing ? undefined : () => {
                                         // collapsing a 700vh track from halfway down would
                                         // yank the page, so close from the top
                                         if (archiveOpen) window.scrollTo({ top: 0 });
@@ -227,8 +241,18 @@ function HomePage() {
 
                                 <CarpetFigure
                                     index={centreSpeaker}
-                                    visible={archiveOpen && speakerCentred}
+                                    visible={placing || (archiveOpen && speakerCentred)}
+                                    carpet={placing ? placement : undefined}
+                                    figureH={placing ? placement.h : undefined}
                                 />
+
+                                {placing && (
+                                    <FigurePlacer
+                                        stageRef={stageBoxRef}
+                                        value={placement}
+                                        onChange={setPlacement}
+                                    />
+                                )}
                             </div>
 
                             {/* Caption rail sits on the viewport, not the stage, so it keeps

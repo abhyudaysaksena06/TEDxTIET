@@ -19,10 +19,10 @@ import { filmFramesData } from "../Reel/filmData";
  */
 
 /** carpet centre, as a percentage of the stage box */
-const CARPET = { x: 49.93, y: 65.69 };
+export const CARPET = { x: 49.93, y: 65.69 };
 
 /** figure height as a share of the stage height — a person at that distance */
-const FIGURE_H = 12;
+export const FIGURE_H = 12;
 
 /**
  * Every cut-out renders at the same height, which is right for the nine
@@ -50,9 +50,18 @@ interface Props {
     index: number;
     /** false while the reel is dormant or the logo owns the screen */
     visible: boolean;
+    /** where the feet stand, in % of the stage box — the placer overrides this */
+    carpet?: { x: number; y: number };
+    /** figure height as a share of the stage height */
+    figureH?: number;
 }
 
-export default function CarpetFigure({ index, visible }: Props) {
+export default function CarpetFigure({
+    index,
+    visible,
+    carpet = CARPET,
+    figureH = FIGURE_H,
+}: Props) {
     const leanRef = useRef<HTMLDivElement>(null);
     const frame = useRef(0);
     const target = useRef(0);
@@ -110,9 +119,9 @@ export default function CarpetFigure({ index, visible }: Props) {
                 ref={leanRef}
                 className="absolute"
                 style={{
-                    left: `${CARPET.x}%`,
-                    top: `${CARPET.y}%`,
-                    height: `${FIGURE_H}%`,
+                    left: `${carpet.x}%`,
+                    top: `${carpet.y}%`,
+                    height: `${figureH}%`,
                     // A zero-width box anchored ON the carpet point. translateY
                     // (-100%) lifts it so its BOTTOM edge sits on the circle —
                     // the figure stands on the carpet instead of being centred
