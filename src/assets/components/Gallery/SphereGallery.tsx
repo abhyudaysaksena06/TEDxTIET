@@ -217,8 +217,13 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
          */
         const restQuat = (outward: THREE.Vector3) => {
             const up = Math.abs(outward.dot(UP)) > 0.95 ? FRONT : UP;
+            // Matrix4.lookAt points +Z from the target back toward the eye,
+            // and a plane's face is its +Z. With the eye at the centre the
+            // face pointed INWARD, so every photo was seen from behind —
+            // mirrored. Eye on the outward point, target the centre, so the
+            // face points out at the viewer.
             return new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(new THREE.Vector3(), outward, up)
+                new THREE.Matrix4().lookAt(outward, new THREE.Vector3(), up)
             );
         };
 
@@ -411,9 +416,14 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 const upAfter = new THREE.Vector3(0, 1, 0)
                     .applyQuaternion(restQuat(tile.userData.outward as THREE.Vector3))
                     .applyQuaternion(alignTarget);
+                // roll is the angle of that up vector clockwise from +Y, so
+                // turning it back upright is a turn of +roll about the view
+                // axis. It was -roll, which doubled the error instead of
+                // cancelling it: about a quarter of the tiles focused upside
+                // down or on their side.
                 const roll = Math.atan2(upAfter.x, upAfter.y);
                 alignTarget.premultiply(
-                    new THREE.Quaternion().setFromAxisAngle(FRONT, -roll)
+                    new THREE.Quaternion().setFromAxisAngle(FRONT, roll)
                 );
                 targetLift = 0;
             }
@@ -608,7 +618,10 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
 
 
         // ---------- loop ----------
-        const clock = new THREE.Clock();
+        // Timer replaces the deprecated Clock. Connected to the document it
+        // also discounts time spent in a background tab.
+        const timer = new THREE.Timer();
+        timer.connect(document);
         const wantQuat = new THREE.Quaternion();
         let spawnTimer = 0;
         let frameId = 0;
@@ -616,7 +629,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         const animate = () => {
             frameId = requestAnimationFrame(animate);
             if (!visible) return;
-            const dt = Math.min(clock.getDelta(), 0.05);
+            timer.update();
+            const dt = Math.min(timer.getDelta(), 0.05);
 
             if (aligning) {
                 // ease toward the chosen tile; a fresh grab cancels this
@@ -718,6 +732,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
 
         return () => {
             cancelAnimationFrame(frameId);
+            timer.dispose();
             io.disconnect();
             window.removeEventListener("resize", onResize);
             window.removeEventListener("keydown", onKey);
@@ -802,7 +817,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 {/* ---- HUD ---- */}
                 <div className="pointer-events-none absolute inset-x-0 top-20 flex justify-between px-5 font-mono text-[10px] uppercase tracking-[0.28em] text-white/55 md:px-8">
                     <span>TEDxTIET · Patiala</span>
-                    <span className="hidden sm:inline">35 frames</span>
+                    <span className="hidden sm:inline">{IMAGE_COUNT} frames</span>
                 </div>
 
                 <p className="pointer-events-none absolute inset-x-0 bottom-6 px-5 text-center font-mono text-[11px] tracking-[0.3em] uppercase text-white/60">

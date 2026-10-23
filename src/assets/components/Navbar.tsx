@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { IMAGE_COUNT } from "./Gallery/galleryPhotos";
+import { TEAM_COUNT } from "../data/team";
 
 /**
  * Navigation.
@@ -20,11 +22,16 @@ interface Destination {
     detail: string;
 }
 
+// Counts come from the data itself. They were typed in by hand, and the
+// menu went on saying 35 frames and 38 students after the gallery grew to
+// 114 and the team shrank to 31.
 const DESTINATIONS: Destination[] = [
-    { title: "Home", href: "/home", detail: "TEDxTIET 2026" },
-    { title: "Gallery", href: "/gallery", detail: "35 frames" },
-    { title: "Team", href: "/team", detail: "38 students" },
-    { title: "Speakers", href: "/speakers", detail: "Archive of Voices" },
+    // "/" rather than "/home", which only redirects there
+    { title: "Home", href: "/", detail: "TEDxTIET 2026" },
+    { title: "Gallery", href: "/gallery", detail: `${IMAGE_COUNT} frames` },
+    { title: "Team", href: "/team", detail: `${TEAM_COUNT} students` },
+    // the page leads with the 2026 line-up, which is not announced yet
+    { title: "Speakers", href: "/speakers", detail: "2026 line-up soon" },
     { title: "Alumni", href: "/alumni", detail: "Past organisers" },
 ];
 
@@ -327,7 +334,7 @@ export default function Navbar() {
                             >
                                 <ul className="list-none border-t border-black/20">
                                     {DESTINATIONS.map((d, i) => {
-                                        const isCurrent = d.href === currentPath;
+                                        const isCurrent = normalizePath(d.href) === currentPath;
                                         return (
                                             <li key={d.href} className="border-b border-black/20">
                                                 <motion.div custom={i} variants={linkVariants}>
