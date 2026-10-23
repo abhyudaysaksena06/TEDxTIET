@@ -184,8 +184,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         // rather than the world, so it holds still while the photographs turn
         // in front of it. Clicks only test tiles.
         const BACKDROP_Z = CYL ? -10 : -15;
-        /** the whole mark at 80%: solid, with the page just showing through */
-        const BACKDROP_OPACITY = 0.8;
+        /** the whole mark at 20%: a solid object, held well back behind the photos */
+        const BACKDROP_OPACITY = 0.2;
         const backdrop = new THREE.Group();
         backdrop.position.z = BACKDROP_Z;
         scene.add(backdrop);
@@ -261,7 +261,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             white: atOpacity(new THREE.LineBasicMaterial({ color: 0x606060 }), 0.85 * BACKDROP_OPACITY),
         };
 
-        // Solid at 80%, not see-through glass. Blending each surface at 80%
+        // Solid at 20%, not see-through glass. Blending each surface at 20%
         // on its own would show every letter's back walls and hidden edges
         // through its front, so a depth-only copy of the letters goes down
         // first and the coloured pass then keeps only the nearest surface at
