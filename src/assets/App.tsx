@@ -112,6 +112,9 @@ function HomePage({ lab = false }: { lab?: boolean }) {
     // which speaker the reel currently has on the screen's centre line
     const [centreSpeaker, setCentreSpeaker] = useState(0);
 
+    // the hero only has something to pin against when it owns a full screen
+    const heroPinned = !(isPhone && !archiveOpen);
+
     // user is on the home page now — start pulling the other pages' images
     // in the background so /gallery and /team are warm when they get there
     useEffect(() => {
@@ -127,26 +130,19 @@ function HomePage({ lab = false }: { lab?: boolean }) {
             {/* Scroll track. Only one viewport tall until the hero is clicked —
                 so a plain scroll goes straight on down the page — then it opens to
                 700vh to give the reel sequence room to play. */}
+            {/* The hero is pinned for the WHOLE document: its sticky
+                containing block is the page itself rather than a fixed-height
+                track, so it never scrolls away and every section below rides up
+                over it. On a phone with the reel dormant there is nothing to
+                pin, so it just sits in flow at the photo's own height. */}
             <div
-                ref={scrollRootRef}
-                className="relative bg-black"
-                style={{
-                    height: archiveOpen ? '700vh' : isPhone ? 'auto' : '100vh',
-                }}
+                className={`w-screen bg-black overflow-hidden text-white font-['Anton'] selection:bg-[#eb0028] selection:text-white ${
+                    heroPinned ? 'sticky top-0 z-0 h-screen' : 'relative z-0'
+                }`}
             >
-                {/* On a phone with the reel dormant there is nothing to pin, so
-                    the hero is just as tall as the photo plus its caption rather
-                    than reserving a full screen of black underneath it. */}
-                <div
-                    className={`w-screen bg-black overflow-hidden text-white font-['Anton'] selection:bg-[#eb0028] selection:text-white ${
-                        isPhone && !archiveOpen ? 'relative' : 'sticky top-0 h-screen'
-                    }`}
+                <section
+                    className={`w-full pt-6 ${heroPinned ? 'h-full' : 'pb-28'}`}
                 >
-                    <section
-                        className={`w-full pt-6 ${
-                            isPhone && !archiveOpen ? 'pb-28' : 'h-full'
-                        }`}
-                    >
                         {/* stands in for the fixed navbar so the stage keeps its position */}
                         <div aria-hidden="true" className="h-8" />
 
@@ -247,9 +243,23 @@ function HomePage({ lab = false }: { lab?: boolean }) {
                                 </p>
                             </motion.div>
                         </div>
-                    </section>
-                </div>
+                </section>
             </div>
+
+            {/* The runway the reel measures its progress against. Pulling it up
+                by one screen makes the hero's own screen of flow count as the
+                runway's first screen, so the stack below starts exactly one
+                screen down when the reel is closed, and 700vh down when it is
+                open — all of it while the hero stays pinned underneath. */}
+            <div
+                ref={scrollRootRef}
+                aria-hidden="true"
+                className="pointer-events-none"
+                style={{
+                    height: archiveOpen ? '700vh' : heroPinned ? '100vh' : '0px',
+                    marginTop: heroPinned ? '-100vh' : 0,
+                }}
+            />
 
             {/* Everything past the hero rides up OVER it rather than pushing it away:
                 the negative margin pulls this stack into the hero's last viewport of
@@ -258,7 +268,7 @@ function HomePage({ lab = false }: { lab?: boolean }) {
             {/* NOTE: no overflow-hidden here — it would clip AboutSection's sticky pin */}
             {/* The overlap only makes sense once the track is 700vh — against a
                 dormant 100vh hero it would swallow the whole thing. */}
-            <div className={`relative z-30 ${archiveOpen ? '-mt-[100vh]' : ''}`}>
+            <div className="relative z-30">
                 <RegistrationSection />
 
                 {/* pinned: one viewport of scroll per card, so the page only moves on
