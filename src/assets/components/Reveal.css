@@ -57,3 +57,30 @@
     transform: translateY(0%);
   }
 }
+
+/* The global prefers-reduced-motion rule in index.css collapses EVERY
+   animation to 0.01ms. For decorative motion that is the right call, but here
+   the animation is the whole component: collapsed, the bar had already swept
+   off and the text had already arrived, so the preloader was a static word on
+   black for a second and a half.
+
+   Specificity beats it — a class selector with !important outranks the `*`
+   rule — so the reveal still happens for these users, as a plain fade with no
+   sweep travelling across the viewport. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-text {
+    transform: none;
+    animation: revealFade 700ms ease-out forwards !important;
+  }
+
+  /* a red block crossing the screen is exactly the kind of movement someone
+     asking for less motion wants gone */
+  .reveal-bar {
+    display: none;
+  }
+}
+
+@keyframes revealFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

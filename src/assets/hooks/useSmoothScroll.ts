@@ -18,12 +18,17 @@ export function useSmoothScroll() {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
         const lenis = new Lenis({
-            duration: 1.05,
+            // Longer settle and a shorter throw per notch. The home page packs a
+            // 700vh reel track behind one screen, so at a 1:1 wheel multiplier a
+            // single notch covered a lot of that sequence and the whole page
+            // read as racing. 0.62 puts roughly a third less distance under each
+            // notch and the longer duration lets it glide to a stop.
+            duration: 1.25,
             // gentle exponential ease-out: quick to respond, soft to settle
             easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             smoothWheel: true,
-            wheelMultiplier: 1,
-            touchMultiplier: 1.6,
+            wheelMultiplier: 0.62,
+            touchMultiplier: 1.0,
         });
 
         let frame = 0;
