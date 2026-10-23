@@ -219,6 +219,30 @@ function HomePage() {
 
                                 <ScreenOutline />
 
+                                {/* Nothing on the page said the hero could be
+                                    clicked, so the whole reel sequence was
+                                    undiscoverable. Sits inside the drawn screen
+                                    at its lower right, and clears out once the
+                                    archive is open — by then it has done its
+                                    job. */}
+                                <p
+                                    aria-hidden={archiveOpen}
+                                    className="pointer-events-none absolute z-20 text-right font-mono uppercase leading-snug"
+                                    style={{
+                                        right: '12%',
+                                        bottom: '38%',
+                                        maxWidth: '38%',
+                                        fontSize: 'clamp(5.5px, 0.58vw, 8.5px)',
+                                        letterSpacing: '0.16em',
+                                        color: 'rgba(255,255,255,0.42)',
+                                        textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+                                        opacity: archiveOpen ? 0 : 1,
+                                        transition: 'opacity 500ms ease',
+                                    }}
+                                >
+                                    Click &amp; scroll to explore the archive of voices
+                                </p>
+
                                 <ScrollLogo
                                     scrollRootRef={scrollRootRef}
                                     active={archiveOpen}
