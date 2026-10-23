@@ -55,6 +55,13 @@ const SPAN = RIGHT_X - LEFT_X;
 
 interface Props {
     scrollRootRef: RefObject<HTMLElement | null>;
+    /**
+     * Fires when a DIFFERENT frame becomes the one nearest the screen's centre.
+     * The per-frame position is already derived every tick for the curve-based
+     * scaling, so this costs nothing extra; it only calls out on a change, so
+     * React re-renders a handful of times across the whole sequence.
+     */
+    onCentre?: (index: number) => void;
 }
 
 /**
@@ -72,11 +79,14 @@ interface Props {
  * and writes transforms. No React render, no layout read, per frame. The
  * measurement is redone only when the element actually resizes.
  */
-export default function ReelOnScreen({ scrollRootRef }: Props) {
+export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const perfRef = useRef<HTMLDivElement>(null);
     const frameRefs = useRef<(HTMLDivElement | null)[]>([]);
+    // kept in a ref so the rAF loop never closes over a stale callback
+    const onCentreRef = useRef(onCentre);
+    onCentreRef.current = onCentre;
 
     useEffect(() => {
         const container = containerRef.current;
@@ -159,6 +169,9 @@ export default function ReelOnScreen({ scrollRootRef }: Props) {
             }
 
             // ---- per-frame size from where the frame sits on the curved screen ----
+            let nearest = -1;
+            let nearestDist = Infinity;
+
             for (let i = 0; i < frameRefs.current.length; i++) {
                 const el = frameRefs.current[i];
                 if (!el) continue;
@@ -171,11 +184,25 @@ export default function ReelOnScreen({ scrollRootRef }: Props) {
                 const relativeScale = (screenHeightAt(px) / MID_HEIGHT) * FRAME_SCALE;
                 const nx = Math.min(1, Math.max(-1, (px - 50) / 50));
                 el.style.transform = `scale(${relativeScale}) rotateY(${nx * 10}deg)`;
+
+                // 50 is the outline's own midpoint, so this is the frame sitting
+                // squarely on the screen's centre line
+                const dist = Math.abs(px - 50);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = i;
+                }
+            }
+
+            if (nearest !== -1 && nearest !== lastCentre) {
+                lastCentre = nearest;
+                onCentreRef.current?.(nearest);
             }
         };
 
         let frameId = 0;
         let lastP = -1;
+        let lastCentre = -1;
 
         const tick = () => {
             const root = scrollRootRef.current;

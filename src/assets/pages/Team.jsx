@@ -32,19 +32,14 @@ const BOARD_RIGHT = [
 
 const COMMITTEE_LEFT = [
   { name: "RAJAT VERMA", side: 'left', image: "/ExecutiveCommittee/RAJAT.webp" },
-  { name: "Doreen Sidhu", side: 'left', image: "/ExecutiveCommittee/DOREEN.webp" },
-  { name: "Raghav Garg", side: 'left', image: "/ExecutiveCommittee/RAGHAV.webp" },
   { name: "Kuwar Kalra", side: 'left', image: "/ExecutiveCommittee/KUWAR.webp" },
   { name: "Shreya Sarin", side: 'left', image: "/ExecutiveCommittee/SHREYA.webp" },
   { name: "Rhytham Gupta", side: 'left', image: "/ExecutiveCommittee/RHYTHAM.webp" },
   { name: "Arav Panchhi Chaturvedi", side: 'left', image: "/ExecutiveCommittee/AARAV.webp" },
   { name: "Hardaksh Sabharwal", side: 'left', image: "/ExecutiveCommittee/HARDAKSH.webp" },
   { name: "Khusboo Gaur", side: 'left', image: "/ExecutiveCommittee/KHUSBOO.webp" },
-  { name: "Nishtha Sidana", side: 'left', image: "/ExecutiveCommittee/NISHTHA.webp" },
-  { name: "Aadya Verma", side: 'left', image: "/ExecutiveCommittee/AADYA.webp" },
   { name: "Raghu Raja", side: 'left', image: "/ExecutiveCommittee/RAGHU.webp" },
   { name: "Jatin Bansal", side: 'left', image: "/ExecutiveCommittee/JATIN.webp" },
-  { name: "Twisha Jain", side: 'left', image: "/ExecutiveCommittee/TWISHA.webp" },
 ];
 
 const COMMITTEE_RIGHT = [
@@ -54,8 +49,6 @@ const COMMITTEE_RIGHT = [
   { name: "Hardik Jain", side: 'right', image: "/ExecutiveCommittee/HARDIK.webp" },
   { name: "Bhavyadeep Singh", side: 'right', image: "/ExecutiveCommittee/BHAVYA.webp" },
   { name: "Ridhi Batra", side: 'right', image: "/ExecutiveCommittee/RIDHI.webp" },
-  { name: "Diya Gupta", side: 'right', image: "/ExecutiveCommittee/DIYA.webp" },
-  { name: "Waris Mittal", side: 'right', image: "/ExecutiveCommittee/WARIS.webp" },
   { name: "Kartik Goyal", side: 'right', image: "/ExecutiveCommittee/KARTIK.webp" },
   { name: "Ayush Mathur", side: 'right', image: "/ExecutiveCommittee/AYUSH.webp" },
   { name: "Shashank Jain", side: 'right', image: "/ExecutiveCommittee/SHASHANK.webp" },
