@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import useIsPhone from "../../hooks/useIsPhone";
 import { PHOTO_ASPECTS, IMAGE_COUNT } from "./galleryPhotos";
+import { layoutWordmark } from "../Stage/wordmark";
 
 /**
  * SphereGallery — photographs you can spin, focus and read.
@@ -111,7 +112,6 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         // tallest 9:16 frames overlapped their neighbours on both bodies.
         const TILE = CYL ? 0.72 : 0.82;
         const CAM_FAR = CYL ? 11.5 : 15;
-        const CAM_NEAR = CYL ? 6.4 : 8.6;
 
         let width = mount.clientWidth || window.innerWidth;
         let height = mount.clientHeight || window.innerHeight;
@@ -174,6 +174,69 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         const dust = new THREE.Points(dustGeo, dustMat);
         scene.add(dust);
         disposables.push(dustGeo, dustMat);
+
+        // ---------- backdrop wordmark ----------
+        // The home page's 3D TEDxTIET, as faint glass behind the photographs,
+        // so the gallery reads as part of the same site. It is drawn into
+        // THIS scene: a second canvas would mean a second WebGL context, and
+        // running out of those is what once blanked the whole site. It hangs
+        // off the scene rather than the world, so it holds still while the
+        // photographs turn in front of it, and it draws first without writing
+        // depth, so it can never hide a tile. Clicks only test tiles.
+        const BACKDROP_Z = CYL ? -10 : -15;
+        const backdrop = new THREE.Group();
+        backdrop.position.z = BACKDROP_Z;
+        scene.add(backdrop);
+
+        const backdropMats: { mat: THREE.Material; base: number }[] = [];
+        const faint = <M extends THREE.Material>(mat: M, base: number) => {
+            mat.transparent = true;
+            mat.depthWrite = false;
+            mat.opacity = base;
+            backdropMats.push({ mat, base });
+            disposables.push(mat);
+            return mat;
+        };
+        // faces and walls in different tones, so the extrusion reads as solid
+        const glass = {
+            red: [
+                faint(new THREE.MeshBasicMaterial({ color: 0xeb0028 }), 0.17),
+                faint(new THREE.MeshBasicMaterial({ color: 0x4a000c }), 0.24),
+            ],
+            white: [
+                faint(new THREE.MeshBasicMaterial({ color: 0xffffff }), 0.12),
+                faint(new THREE.MeshBasicMaterial({ color: 0x5c5c5c }), 0.2),
+            ],
+        };
+        const rim = {
+            red: faint(new THREE.LineBasicMaterial({ color: 0xff3a52 }), 0.4),
+            white: faint(new THREE.LineBasicMaterial({ color: 0xffffff }), 0.28),
+        };
+
+        const mark = layoutWordmark();
+        mark.parts.forEach(({ geometry, tone, position }) => {
+            const letters = new THREE.Mesh(geometry, glass[tone]);
+            letters.position.copy(position);
+            letters.renderOrder = -1;
+            const edgeGeo = new THREE.EdgesGeometry(geometry, 25);
+            const edges = new THREE.LineSegments(edgeGeo, rim[tone]);
+            edges.renderOrder = -1;
+            letters.add(edges);
+            backdrop.add(letters);
+            disposables.push(geometry, edgeGeo);
+        });
+
+        // Size it against the resting camera so it spans the frame whatever
+        // the screen. Zooming then moves past it at its own depth, which is
+        // the parallax that sells it as being behind the photographs.
+        const fitBackdrop = () => {
+            const dist = CAM_FAR - BACKDROP_Z;
+            const visibleW =
+                2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+            backdrop.scale.setScalar((visibleW * (CYL ? 0.92 : 0.86)) / mark.width);
+        };
+        fitBackdrop();
+        let backdropPresence = 1;
         const positions = CYL
             ? cylinderPoints(SLOT_COUNT, RADIUS, 8, TILE * 2.3)
             : fibonacciSphere(SLOT_COUNT, RADIUS);
@@ -390,10 +453,39 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             );
         };
 
+        /**
+         * Where the camera stops for a focused photo, so the whole of it fits.
+         *
+         * This was one fixed distance, tuned when every tile was the same
+         * landscape shape. With tiles shaped like their photos, a wide frame
+         * ran off the sides of a phone and a portrait one off the top and
+         * bottom of a desktop. Now it is worked out from this tile's own size
+         * at focus scale, against the screen's shape, leaving room for the
+         * masthead above and the hint line below.
+         */
+        const FOCUS_SCALE = 1.85;
+        let focusDist = CAM_FAR;
+        const fitFocus = (tile: THREE.Mesh) => {
+            const { width: w, height: h } = (tile.geometry as THREE.PlaneGeometry).parameters;
+            const spanH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+            const d = Math.max(
+                (w * FOCUS_SCALE) / 0.9 / (spanH * camera.aspect),
+                // 68% tall: at 74% the tallest frames met the masthead's rule
+                (h * FOCUS_SCALE) / 0.68 / spanH
+            );
+            // the focused tile sits on the body's surface, square to the camera
+            focusDist = RADIUS + d;
+        };
+
         const focusTile = (tile: THREE.Mesh) => {
             focused = tile;
             aligning = true;
             loadFull(tile);
+            fitFocus(tile);
+            // Frame the photo from the default zoom. Zoomed far in, the old
+            // distance times the zoom put the camera inside the body, with the
+            // photo behind it. Scrolling still zooms the photo from here.
+            zoom = 1;
 
             if (CYL) {
                 // one axis of freedom: swing the tile round to the front, and
@@ -657,6 +749,18 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             dust.rotation.y -= dt * 0.035;
             dust.rotation.x += dt * 0.008;
 
+            // the backdrop leans toward the pointer as the hero's logo does,
+            // and steps back while a photograph has the floor
+            const leanX = pointerInside ? pointer.x : 0;
+            const leanY = pointerInside ? pointer.y : 0;
+            const ease = Math.min(1, dt * 2.5);
+            backdrop.rotation.y += (leanX * 0.16 - backdrop.rotation.y) * ease;
+            backdrop.rotation.x += (-leanY * 0.08 - backdrop.rotation.x) * ease;
+            backdropPresence += ((focused ? 0.35 : 1) - backdropPresence) * Math.min(1, dt * 4);
+            backdropMats.forEach(({ mat, base }) => {
+                mat.opacity = base * backdropPresence;
+            });
+
             // cylinder: slide the body so the focused row sits on the eye line
             lift += (targetLift - lift) * Math.min(1, dt * 5);
             if (CYL && !dragging) {
@@ -666,7 +770,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             }
             world.position.y = lift + (focused ? 0 : panY);
 
-            const camTarget = (focused ? CAM_NEAR : CAM_FAR) * zoom;
+            const camTarget = (focused ? focusDist : CAM_FAR) * zoom;
             camera.position.z += (camTarget - camera.position.z) * Math.min(1, dt * 3.2);
 
             const hovered = (() => {
@@ -682,7 +786,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 const dimmed = focused && tile !== focused ? 0.3 : 1;
                 mat.opacity += (ready * dimmed - mat.opacity) * Math.min(1, dt * 6);
 
-                const target = tile === focused ? 1.85 : tile === hovered ? 1.28 : 1;
+                const target = tile === focused ? FOCUS_SCALE : tile === hovered ? 1.28 : 1;
                 tile.scale.setScalar(tile.scale.x + (target - tile.scale.x) * Math.min(1, dt * 9));
 
                 // No special case for the focused tile any more. The body's
@@ -727,6 +831,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
+            fitBackdrop();
+            if (focused) fitFocus(focused);
         };
         window.addEventListener("resize", onResize);
 
