@@ -204,38 +204,66 @@ export default function Navbar() {
                     />
                 </Link>
 
-                {/* The page title, deliberately NOT boxed inside the bar.
-                    It hangs off the bar's lower edge and overflows it, so the
-                    bar gains no divider or background of its own while the
-                    title is big enough to actually carry the page. One
-                    treatment, identical on every route. */}
+                {/* The page title has two states that share the bar's own
+                    scroll mechanics.
+
+                    At the top it is a masthead hanging off the bar's lower
+                    edge, deliberately NOT boxed inside it, so the bar gains no
+                    divider of its own. Once scrolled it retracts up behind the
+                    bar and hands over to a compact label sitting IN it — which
+                    is what stops it stranding itself over the page. It was a
+                    child of the bar before, but it overflows the bar's box, so
+                    -translate-y-full moved the bar by its own height and left
+                    the title behind on the content. */}
                 {pageTitle && !isOpen && (
-                    <div className="pointer-events-none absolute inset-x-0 top-full -mt-2 flex justify-center px-5">
-                        <span className="relative block">
-                            <span
-                                className="block font-['Anton'] uppercase leading-[0.85] text-white"
-                                style={{
-                                    fontSize: "clamp(1.75rem, 6vw, 3.75rem)",
-                                    letterSpacing: "0.02em",
-                                    // the stage pages run bright under it
-                                    textShadow: "0 2px 18px rgba(0,0,0,0.65)",
-                                }}
-                            >
-                                {pageTitle}
-                            </span>
-                            {/* the rule is the accent — it runs past the word on
-                                both sides so the title reads as a masthead
-                                rather than a label sitting in a box */}
-                            <span
-                                aria-hidden="true"
-                                className="absolute -inset-x-3 -bottom-2 block h-[3px]"
-                                style={{
-                                    background:
-                                        "linear-gradient(to right, transparent, #eb0028 20%, #eb0028 80%, transparent)",
-                                }}
-                            />
+                    <>
+                        {/* scrolled: compact, inside the bar */}
+                        <span
+                            className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 font-mono text-[11px] uppercase tracking-[0.34em] text-white/70 sm:block"
+                            style={{
+                                opacity: atTop ? 0 : 1,
+                                transition: "opacity 260ms ease",
+                            }}
+                        >
+                            {pageTitle}
                         </span>
-                    </div>
+
+                        {/* at the top: the masthead */}
+                        <div
+                            className="pointer-events-none absolute inset-x-0 top-full -mt-2 flex justify-center px-5"
+                            style={{
+                                opacity: atTop ? 1 : 0,
+                                transform: atTop ? "translateY(0)" : "translateY(-45%)",
+                                transition:
+                                    "opacity 280ms ease, transform 320ms cubic-bezier(0.22,1,0.36,1)",
+                            }}
+                        >
+                            <span className="relative block">
+                                <span
+                                    className="block font-['Anton'] uppercase leading-[0.85] text-white"
+                                    style={{
+                                        fontSize: "clamp(1.75rem, 6vw, 3.75rem)",
+                                        letterSpacing: "0.02em",
+                                        // the stage pages run bright under it
+                                        textShadow: "0 2px 18px rgba(0,0,0,0.65)",
+                                    }}
+                                >
+                                    {pageTitle}
+                                </span>
+                                {/* the rule runs past the word on both sides so
+                                    the title reads as a masthead rather than a
+                                    label sitting in a box */}
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute -inset-x-3 -bottom-2 block h-[3px]"
+                                    style={{
+                                        background:
+                                            "linear-gradient(to right, transparent, #eb0028 20%, #eb0028 80%, transparent)",
+                                    }}
+                                />
+                            </span>
+                        </div>
+                    </>
                 )}
 
                 <button
