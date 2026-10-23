@@ -203,10 +203,24 @@ export default function Navbar() {
                 <Link
                     to="/"
                     aria-label="TEDxTIET home"
-                    className="relative z-[2] text-2xl font-bold tracking-tighter transition-colors duration-300 hover:opacity-80"
-                    style={{ color: isOpen ? "#000" : RED }}
+                    className="relative z-[2] block transition-opacity duration-300 hover:opacity-80"
                 >
-                    TEDxTIET
+                    {/* The official lockup: red TEDx, white TIET, built for a
+                        dark ground. Over the open menu's red the red half would
+                        vanish, so the whole mark is knocked to black there —
+                        matching the close button beside it. */}
+                    <img
+                        src="/tedxtiet-lockup.png"
+                        alt=""
+                        width={1255}
+                        height={202}
+                        className="h-[22px] w-auto select-none sm:h-[26px]"
+                        style={{
+                            filter: isOpen ? "brightness(0)" : "none",
+                            transition: "filter 300ms ease",
+                        }}
+                        draggable={false}
+                    />
                 </Link>
 
                 {pageTitle && !isOpen && (
