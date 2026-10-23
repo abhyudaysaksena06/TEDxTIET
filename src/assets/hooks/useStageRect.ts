@@ -73,7 +73,11 @@ export function useStageRect(
             setRect((prev) => {
                 const next = {
                     left: (cw - width) / 2,
-                    top: (ch - height) / 2,
+                    // "width" means the photo is as wide as the screen and
+                    // shorter than the box, so centring it vertically left a
+                    // band of dead black above it on phones. It sits at the top
+                    // and the page carries on underneath.
+                    top: mode === "width" ? 0 : (ch - height) / 2,
                     width,
                     height,
                     k: width / REFERENCE_STAGE_W,

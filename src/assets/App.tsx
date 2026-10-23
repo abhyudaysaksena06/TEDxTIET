@@ -130,16 +130,37 @@ function HomePage({ lab = false }: { lab?: boolean }) {
             <div
                 ref={scrollRootRef}
                 className="relative bg-black"
-                style={{ height: archiveOpen ? '700vh' : '100vh' }}
+                style={{
+                    height: archiveOpen ? '700vh' : isPhone ? 'auto' : '100vh',
+                }}
             >
-                <div className="sticky top-0 h-screen w-screen bg-black overflow-hidden text-white font-['Anton'] selection:bg-[#eb0028] selection:text-white">
-                    <section className="w-full h-full pt-6">
+                {/* On a phone with the reel dormant there is nothing to pin, so
+                    the hero is just as tall as the photo plus its caption rather
+                    than reserving a full screen of black underneath it. */}
+                <div
+                    className={`w-screen bg-black overflow-hidden text-white font-['Anton'] selection:bg-[#eb0028] selection:text-white ${
+                        isPhone && !archiveOpen ? 'relative' : 'sticky top-0 h-screen'
+                    }`}
+                >
+                    <section
+                        className={`w-full pt-6 ${
+                            isPhone && !archiveOpen ? 'pb-28' : 'h-full'
+                        }`}
+                    >
                         {/* stands in for the fixed navbar so the stage keeps its position */}
                         <div aria-hidden="true" className="h-8" />
 
+                        {/* On a phone the photo is width-fitted, so the box is
+                            sized to the photo itself (no dead space above or
+                            below) and the caption follows underneath. On wider
+                            screens the photo covers a full-height box. */}
                         <div
                             ref={stageHostRef}
-                            className="relative h-[calc(100dvh-120px)] w-full"
+                            className={`relative w-full ${
+                                isPhone
+                                    ? "aspect-[1375/768]"
+                                    : "h-[calc(100dvh-120px)]"
+                            }`}
                         >
                             {/* The wordmark is rendered in WebGL, so it does not exist
                                 for screen readers or search engines. This carries the
@@ -184,7 +205,7 @@ function HomePage({ lab = false }: { lab?: boolean }) {
                                 <ScrollLogo
                                     scrollRootRef={scrollRootRef}
                                     active={archiveOpen}
-                                    scaleK={stage.k}
+                                    scaleK={isPhone ? 0.9 : stage.k}
                                     stageW={stage.width}
                                     stageH={stage.height}
                                     onSelect={() => {
@@ -213,7 +234,7 @@ function HomePage({ lab = false }: { lab?: boolean }) {
                                 its margins on tall phones. Stacks below sm to stop the
                                 tagline and the year overlapping. */}
                             <motion.div
-                                className="absolute bottom-6 sm:bottom-12 left-0 right-0 z-20 flex flex-col items-start gap-2 px-5 sm:px-10 md:px-14 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                                className="absolute inset-x-0 top-full z-20 mt-5 flex flex-col items-start gap-2 px-5 sm:inset-auto sm:bottom-12 sm:left-0 sm:right-0 sm:top-auto sm:mt-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-10 md:px-14"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.8, duration: 1 }}
@@ -221,7 +242,7 @@ function HomePage({ lab = false }: { lab?: boolean }) {
                                 <p className="max-w-[18rem] text-pretty text-sm tracking-widest sm:max-w-[350px] sm:text-xl">
                                     Exploring the boundaries of digital space and time.
                                 </p>
-                                <p className="text-5xl font-bold uppercase italic leading-none sm:text-6xl">
+                                <p className="w-full text-right text-3xl font-bold uppercase italic leading-none sm:w-auto sm:text-left sm:text-6xl">
                                     20<span className="text-[#eb0028]">26</span>
                                 </p>
                             </motion.div>
