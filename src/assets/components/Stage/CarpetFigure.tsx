@@ -22,7 +22,7 @@ import { filmFramesData } from "../Reel/filmData";
 const CARPET = { x: 49.93, y: 65.69 };
 
 /** figure height as a share of the stage height — a person at that distance */
-const FIGURE_H = 30;
+const FIGURE_H = 12;
 
 /**
  * Every cut-out renders at the same height, which is right for the nine

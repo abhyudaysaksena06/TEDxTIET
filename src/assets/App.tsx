@@ -109,8 +109,12 @@ function HomePage() {
     // the page. Clicking the hero flips it to "ARCHIVE OF VOICES" and opens the
     // long scroll track that plays the reel.
     const [archiveOpen, setArchiveOpen] = useState(false);
-    // which speaker the reel currently has on the screen's centre line
+    // which speaker the reel currently has on the screen's centre line, and
+    // whether it is actually ON it — the figure used to appear the moment the
+    // hero was clicked, standing in front of the ARCHIVE OF VOICES title with
+    // no card anywhere near the middle
     const [centreSpeaker, setCentreSpeaker] = useState(0);
+    const [speakerCentred, setSpeakerCentred] = useState(false);
 
     // the hero only has something to pin against when it owns a full screen
     const heroPinned = !(isPhone && !archiveOpen);
@@ -214,13 +218,16 @@ function HomePage() {
                                 {archiveOpen && (
                                     <ReelOnScreen
                                         scrollRootRef={scrollRootRef}
-                                        onCentre={setCentreSpeaker}
+                                        onCentre={(i, centred) => {
+                                            setCentreSpeaker(i);
+                                            setSpeakerCentred(centred);
+                                        }}
                                     />
                                 )}
 
                                 <CarpetFigure
                                     index={centreSpeaker}
-                                    visible={archiveOpen}
+                                    visible={archiveOpen && speakerCentred}
                                 />
                             </div>
 

@@ -53,15 +53,29 @@ const TOP_MIN = Math.min(...TOP.map(([, y]) => y));
 const BOTTOM_MAX = Math.max(...BOTTOM.map(([, y]) => y));
 const SPAN = RIGHT_X - LEFT_X;
 
+/**
+ * How close to the outline's midpoint a frame must sit to count as "on the
+ * centre line", in the outline's own 0-100 units — roughly the middle third of
+ * the drawn screen.
+ *
+ * Swept against the real frame geometry: at 6.5 every speaker qualified but
+ * only for 3% of the reel each, leaving the carpet empty 70% of the time and
+ * the figure blinking. At 20 it is near-continuous but fires while a card is
+ * still a quarter of the way off, which defeats the point. 13 puts a speaker
+ * on the carpet 61% of the reel with a clear beat between each one.
+ */
+const CENTRE_WINDOW = 13;
+
 interface Props {
     scrollRootRef: RefObject<HTMLElement | null>;
     /**
-     * Fires when a DIFFERENT frame becomes the one nearest the screen's centre.
-     * The per-frame position is already derived every tick for the curve-based
-     * scaling, so this costs nothing extra; it only calls out on a change, so
-     * React re-renders a handful of times across the whole sequence.
+     * Fires when the frame nearest the screen's centre changes, OR when it
+     * crosses in or out of the centre window. The per-frame position is
+     * already derived every tick for the curve-based scaling, so this costs
+     * nothing extra, and reporting only on a change keeps React re-renders to
+     * a handful across the whole sequence.
      */
-    onCentre?: (index: number) => void;
+    onCentre?: (index: number, centred: boolean) => void;
 }
 
 /**
@@ -194,15 +208,18 @@ export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
                 }
             }
 
-            if (nearest !== -1 && nearest !== lastCentre) {
+            const centred = nearest !== -1 && nearestDist <= CENTRE_WINDOW;
+            if (nearest !== -1 && (nearest !== lastCentre || centred !== lastCentred)) {
                 lastCentre = nearest;
-                onCentreRef.current?.(nearest);
+                lastCentred = centred;
+                onCentreRef.current?.(nearest, centred);
             }
         };
 
         let frameId = 0;
         let lastP = -1;
         let lastCentre = -1;
+        let lastCentred = false;
 
         const tick = () => {
             const root = scrollRootRef.current;
