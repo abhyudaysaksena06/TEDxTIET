@@ -22,6 +22,10 @@ const TeamMatrix = () => {
   const hoverTimeoutRef = useRef(null);
   const widthsRef = useRef([]);
   const scalesRef = useRef([]);
+  // the recentring offset is eased too — it used to snap to its new value the
+  // instant the hovered panel changed, which is what made moving between two
+  // photos feel like a jolt rather than a transition
+  const alignRef = useRef(0);
 
   // Interaction Refs
   const isDraggingRef = useRef(false);
@@ -30,11 +34,11 @@ const TeamMatrix = () => {
   const velocityRef = useRef(0);
   const interactionTimeRef = useRef(0);
 
-  // Fraction of one full loop advanced per frame. At the old 0.00021 a single
-  // pass took about 80 seconds, so the strip read as static and most faces
-  // never came round while anyone was looking. This brings a full cycle to
-  // roughly 23 seconds, so every member drifts past on their own.
-  const speed = 0.00072;
+  // Fraction of one full loop advanced per frame. 0.00021 took ~80s and read
+  // as frozen; 0.00072 took ~23s and moved faster than you could look at
+  // anyone. This sits between them at roughly 44 seconds a pass — moving
+  // clearly, slow enough to read a face as it goes by.
+  const speed = 0.00038;
 
   useEffect(() => {
     widthsRef.current = TEAM_MEMBERS.map(() => 0);
@@ -66,11 +70,13 @@ const TeamMatrix = () => {
           : baseWidth;
         const targetScale = isHovered ? 1.25 : 1;
 
+        // gentler easing on both: the old 0.12 / 0.08 settled fast enough to
+        // read as a snap when the hover moved from one panel to the next
         widthsRef.current[i] = widthsRef.current[i] === 0
           ? targetWidth
-          : widthsRef.current[i] + (targetWidth - widthsRef.current[i]) * 0.12;
+          : widthsRef.current[i] + (targetWidth - widthsRef.current[i]) * 0.07;
 
-        scalesRef.current[i] = scalesRef.current[i] + (targetScale - scalesRef.current[i]) * 0.08;
+        scalesRef.current[i] = scalesRef.current[i] + (targetScale - scalesRef.current[i]) * 0.055;
       });
 
       // 2. Momentum & Auto-Drift
@@ -88,8 +94,8 @@ const TeamMatrix = () => {
         }
       }
 
-      // 3. Alignment Shift
-      let alignmentShift = 0;
+      // 3. Alignment Shift — eased toward its target, never set outright
+      let targetAlign = 0;
       if (hoveredIndexRef.current !== null) {
         const h = hoveredIndexRef.current;
         const targetLogicalCenter = (h + 0.5) * baseWidth;
@@ -98,8 +104,10 @@ const TeamMatrix = () => {
         for (let j = 0; j < h; j++) cumulativeBefore += widthsRef.current[j];
         const currentLogicalCenter = cumulativeBefore + (widthsRef.current[h] / 2);
 
-        alignmentShift = targetLogicalCenter - currentLogicalCenter;
+        targetAlign = targetLogicalCenter - currentLogicalCenter;
       }
+      alignRef.current += (targetAlign - alignRef.current) * 0.07;
+      const alignmentShift = alignRef.current;
 
       const totalPhysicalLength = logicalLoopWidth * 2;
       const globalOffset = progressRef.current * logicalLoopWidth;
@@ -177,7 +185,7 @@ const TeamMatrix = () => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       hoveredIndexRef.current = i % 10;
-    }, 200);
+    }, 120);
   };
 
   const handleMouseLeave = () => {
@@ -199,7 +207,7 @@ const TeamMatrix = () => {
         <div
           key={`${member.name}-${i}`}
           ref={(el) => (itemsRef.current[i] = el)}
-          className="team-panel overflow-hidden pointer-events-none grayscale absolute top-1/2 left-0 transition-[filter] duration-500 hover:grayscale-0 group"
+          className="team-panel overflow-hidden pointer-events-none grayscale absolute top-1/2 left-0 px-[5px] transition-[filter] duration-500 hover:grayscale-0 group"
           style={{ height: '100%' }}
         >
           {/* Hitbox inside panel */}
@@ -214,7 +222,7 @@ const TeamMatrix = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="panel-content absolute bottom-8 left-8 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-            <p className="text-white font-black text-xl md:text-2xl uppercase tracking-tighter leading-tight">{member.name}</p>
+            <p className="text-white text-xl md:text-2xl uppercase tracking-[0.02em] leading-tight">{member.name}</p>
             <p className="text-primary font-label text-[10px] tracking-[0.3em] uppercase mt-1 accent-title">{member.role}</p>
           </div>
         </div>

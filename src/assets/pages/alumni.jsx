@@ -110,7 +110,9 @@ export default function AlumniPage() {
 
       {/* Header */}
       <div style={styles.header}>
-        <h1 style={styles.heading}>Alumni</h1>
+        {/* the navbar carries the page name; this stays for assistive tech
+            and search engines so the page still has a level-1 heading */}
+        <h1 className="sr-only">Alumni</h1>
         <p style={styles.subheading}>Honoring the visionaries who have shaped the TEDxTIET legacy and continue to inspire across the globe.</p>
       </div>
 

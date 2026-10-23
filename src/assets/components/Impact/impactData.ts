@@ -1,6 +1,10 @@
 // Content ported from TEDxTIET1/TEDxTIET26-27 (src/data/impactData.js)
+
+/** which animated mark stands in for this figure */
+export type MarkKind = "wave" | "grid" | "timeline" | "tally";
+
 export interface ImpactStat {
-    /** the figure, split so the numeral can animate and the unit cannot */
+    /** the figure, split so the numeral can count and the unit cannot */
     value: number;
     suffix: string;
     label: string;
@@ -9,6 +13,13 @@ export interface ImpactStat {
     weight: number;
     /** thousands separators on the counted numeral */
     group?: boolean;
+    /**
+     * The mark is chosen to MEAN something rather than to decorate: plays as a
+     * waveform, people as a filled grid, years as a dated timeline, speakers as
+     * a tally of strokes. The old section used emoji in progress rings, which
+     * carried no information at all.
+     */
+    mark: MarkKind;
 }
 
 export const impactData = {
@@ -22,6 +33,7 @@ export const impactData = {
             label: "Views on YouTube",
             description: "Across every talk we have published",
             weight: 0.85,
+            mark: "wave",
         },
         {
             value: 3000,
@@ -30,6 +42,7 @@ export const impactData = {
             description: "A community that keeps turning up",
             weight: 0.6,
             group: true,
+            mark: "grid",
         },
         {
             value: 8,
@@ -37,6 +50,7 @@ export const impactData = {
             label: "On campus",
             description: "Running since 2015, student-led throughout",
             weight: 1,
+            mark: "timeline",
         },
         {
             value: 20,
@@ -44,6 +58,7 @@ export const impactData = {
             label: "Speakers hosted",
             description: "Founders, researchers, artists, alumni",
             weight: 0.75,
+            mark: "tally",
         },
     ] as ImpactStat[],
 };

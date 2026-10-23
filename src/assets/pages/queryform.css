@@ -24,8 +24,9 @@
     border-radius: 10px;
 }
 
-/* the heading is an h1 now — the page had none */
-.login-box h1 {
+/* The visible heading moved into the navbar; the h1 is sr-only now, so this
+   rule would otherwise reserve 30px of margin for nothing. */
+.login-box h1:not(.sr-only) {
     margin: 0 0 30px;
     padding: 0;
     color: #fff;

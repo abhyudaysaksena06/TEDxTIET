@@ -29,9 +29,12 @@ import fontJson from './helvetiker_bold.typeface.json'
 /** @param {{ idleRef?: any, frozenRef?: any, mode?: 'logo'|'archive', onSelect?: () => void }} props */
 function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
   const mountRef = useRef(null)
-  // kept in a ref so the effect never closes over a stale handler
+  // kept in refs so the effect never closes over a stale value — the render
+  // loop reads both every frame
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
+  const modeRef = useRef(mode)
+  modeRef.current = mode
 
   useEffect(() => {
     const mount = mountRef.current
@@ -86,6 +89,15 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     logoGroup.position.set(0, 1.15, 2.4) // pivot at logo center
     logoScene.add(logoGroup)
     const font = new FontLoader().parse(fontJson)
+    // Materials are built ONCE and reused across title swaps — only the
+    // geometry is rebuilt. They are transparent so the crossfade can be driven
+    // from the render loop instead of by remounting anything.
+    let buildTitle
+    let setTitleOpacity
+    let fadeMats = []
+    /** geometries + edge materials belonging to the CURRENT title only */
+    const titleParts = []
+    const edgeMats = []
     {
       const textOpts = {
         font,
@@ -107,12 +119,14 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
         clearcoatRoughness: 0.5,
         emissive: 0xff2828,
         emissiveIntensity: 0.22,
+        transparent: true,
       })
       // metallic bevel/side edges
       const redSideMat = new THREE.MeshStandardMaterial({
         color: 0xd8d8d8,
         metalness: 0.9,
         roughness: 0.35,
+        transparent: true,
       })
 
       const whiteMat = new THREE.MeshPhysicalMaterial({
@@ -123,12 +137,14 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
         clearcoatRoughness: 0.6,
         emissive: 0xffffff,
         emissiveIntensity: 0.24,
+        transparent: true,
       })
       // darker metal so the bezels read against the bright white glass
       const whiteSideMat = new THREE.MeshStandardMaterial({
         color: 0x8f8f8f,
         metalness: 0.85,
         roughness: 0.45,
+        transparent: true,
       })
 
       // re-group triangles so only the angled bevel strips are metal:
@@ -148,11 +164,14 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
         const edgeGeo = new THREE.EdgesGeometry(geo, 25)
         const edgeMat = new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.85 })
         mesh.add(new THREE.LineSegments(edgeGeo, edgeMat))
-        disposables.push(geo, edgeGeo, edgeMat)
+        // tracked per build, not for the lifetime of the scene: these are
+        // thrown away and remade on every title swap
+        titleParts.push(geo, edgeGeo, edgeMat)
+        edgeMats.push(edgeMat)
         return mesh
       }
 
-      if (mode === 'archive') {
+      const buildArchive = () => {
         // "ARCHIVE OF VOICES" — two stacked lines, smaller than the logo so the
         // longer string still sits inside the same screen width
         const lineOpts = { ...textOpts, size: 0.95 }
@@ -172,7 +191,9 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
         place(bottom, -0.72)
 
         logoGroup.add(top, bottom)
-      } else {
+      }
+
+      const buildWordmark = () => {
         const ted = make('TED', textOpts, [redMat, redMat, redSideMat])
         const tedW = ted.geometry.boundingBox.max.x - ted.geometry.boundingBox.min.x
 
@@ -200,6 +221,25 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
 
         logoGroup.add(ted, x, tiet)
       }
+
+      // Swap the lettering WITHOUT touching the renderer, the environment map
+      // or the canvas. Rebuilding those was what made the change read as a
+      // stutter: the whole WebGL context was torn down and recreated at the
+      // exact midpoint of the crossfade.
+      buildTitle = (which) => {
+        logoGroup.clear()
+        titleParts.forEach((d) => d.dispose())
+        titleParts.length = 0
+        edgeMats.length = 0
+        if (which === 'archive') buildArchive()
+        else buildWordmark()
+      }
+
+      fadeMats = [redMat, redSideMat, whiteMat, whiteSideMat]
+      setTitleOpacity = (v) => {
+        fadeMats.forEach((m) => { m.opacity = v })
+        edgeMats.forEach((m) => { m.opacity = 0.85 * v })
+      }
       disposables.push(redMat, redSideMat, whiteMat, whiteSideMat)
     }
 
@@ -218,15 +258,52 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     }
     window.addEventListener('pointermove', onMouseTrack)
 
+    // ---------- title crossfade ----------
+    // Driven from the render loop against real elapsed time, so it runs at the
+    // same speed on any refresh rate and is frame-accurate. Because the target
+    // is read from a ref every frame, clicking again mid-transition simply
+    // reverses it instead of desyncing — no click suppression needed.
+    const FADE_SECONDS = 0.3
+    let builtMode = modeRef.current
+    let fade = 1 // 1 = fully present, 0 = fully faded out
+    buildTitle(builtMode)
+    setTitleOpacity(1)
+
+    const stepFade = (dt) => {
+      const wanted = modeRef.current
+      // fade out while the target differs, back in once the new letters are up
+      const dir = wanted === builtMode ? 1 : -1
+      fade = Math.max(0, Math.min(1, fade + (dir * dt) / FADE_SECONDS))
+
+      if (fade === 0 && wanted !== builtMode) {
+        // nothing is visible right now, so this is the moment to swap meshes
+        buildTitle(wanted)
+        builtMode = wanted
+      }
+
+      // smoothstep, then a touch of scale so the change reads as deliberate
+      const e = fade * fade * (3 - 2 * fade)
+      setTitleOpacity(e)
+      logoGroup.scale.setScalar(0.955 + 0.045 * e)
+    }
+
     let frameId
+    let lastT = performance.now()
     const animate = () => {
       // scrolled away behind the film reel: keep the loop alive but draw nothing.
       // The last frame stays on the canvas, and since the stage is dimmed and
       // pushed off to the left by then, the freeze is invisible.
+      const now = performance.now()
+      const dt = Math.min(0.05, (now - lastT) / 1000)
+      lastT = now
+
       if (idleRef?.current) {
         frameId = requestAnimationFrame(animate)
         return
       }
+
+      stepFade(dt)
+
       if (frozenRef?.current?.frozen) {
         // scroll has taken over: hold the pinned pose, ignore cursor/drag entirely
         logoGroup.rotation.x = frozenRef.current.x
@@ -322,14 +399,16 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
       canvas.removeEventListener('pointerup', onPointerUp)
       canvas.removeEventListener('pointercancel', onPointerUp)
       mount.removeChild(renderer.domElement)
+      titleParts.forEach((d) => d.dispose())
       disposables.forEach((d) => d.dispose())
       envTex.dispose()
       pmrem.dispose()
       renderer.dispose()
     }
-    // `mode` rebuilds the scene so the title can swap between TEDxTIET and
-    // ARCHIVE OF VOICES; it's a one-off click, so the teardown cost is fine
-  }, [idleRef, mode])
+    // NOT `mode`: the scene is built once and the lettering is swapped inside
+    // it. Listing mode here tore down the renderer, the PMREM environment and
+    // the canvas on every click, which is what made the transition lurch.
+  }, [idleRef])
 
   // the canvas paints the TEDxTIET wordmark; label it so assistive tech
   // reports something other than an empty box

@@ -77,28 +77,6 @@ const MemberCard = ({ name, role, image }) => (
   </div>
 );
 
-const Hero = ({ isIntroActive }) => (
-  <div className={`mb-12 md:mb-4 relative text-center transition-all duration-1000 delay-500 ${isIntroActive ? 'opacity-0 translate-y-10' : 'opacity-100 translate-y-0'}`}>
-    <h1 className="font-headline text-6xl md:text-[10rem] font-black tracking-tighter leading-none uppercase">
-      Our <span className="kinetic-title-stroke-red text-white" style={{ WebkitTextStroke: '2px #eb0028', color: 'transparent' }}>Team</span>
-    </h1>
-  </div>
-);
-
-const IntroOverlay = ({ isActive }) => (
-  <div className={`fixed inset-0 z-[5000] flex items-center justify-center transition-all duration-1000 ease-in-out pointer-events-none ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-    <div className={`absolute inset-0 bg-black/60 backdrop-blur-3xl transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
-    <div aria-hidden="true" className={`relative transition-all duration-1000 ease-out transform ${isActive ? 'scale-100 opacity-100' : 'scale-150 opacity-0'}`}>
-      {/* a <div>, not an <h1>: this repeats the page title purely as an
-          animation, and having both meant the page shipped two level-1
-          headings */}
-      <div className="font-headline text-6xl sm:text-7xl md:text-[12rem] font-black tracking-tighter leading-none uppercase text-center">
-        Our <br className="md:hidden" /> <span className="text-white" style={{ WebkitTextStroke: '2px #eb0028', color: 'transparent' }}>Team</span>
-      </div>
-    </div>
-  </div>
-);
-
 const ExecutiveBoardItem = ({ name, role, image, side }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [imageTop, setImageTop] = useState(0);
@@ -128,7 +106,7 @@ const ExecutiveBoardItem = ({ name, role, image, side }) => {
         <div className="relative w-fit">
           <h3
             ref={nameRef}
-            className="font-headline font-bold tracking-tighter uppercase text-white text-5xl md:text-6xl group-hover:text-[#eb0028] transition-colors z-10"
+            className="font-headline tracking-[0.02em] uppercase text-white text-5xl md:text-6xl group-hover:text-[#eb0028] transition-colors z-10"
           >
             {name}
           </h3>
@@ -157,7 +135,7 @@ const ExecutiveBoardItem = ({ name, role, image, side }) => {
 const ExecutiveBoard = () => {
   return (
     <div className="mb-16 relative">
-      <h2 className="font-headline text-5xl md:text-7xl font-black tracking-tighter uppercase mb-8 md:mb-12 text-white px-4 md:px-0">
+      <h2 className="font-headline text-5xl md:text-7xl tracking-[0.015em] uppercase mb-8 md:mb-12 text-white px-4 md:px-0">
         Executive <span className="text-[#eb0028]">Board</span>
       </h2>
       
@@ -213,7 +191,7 @@ const ExecutiveCommitteeItem = ({ name, image, side }) => {
       <div className="relative w-fit">
         <h2
           ref={nameRef}
-          className="font-headline text-4xl md:text-5xl font-bold tracking-tighter uppercase text-white group-hover:text-[#eb0028] transition-colors z-10"
+          className="font-headline text-4xl md:text-5xl tracking-[0.02em] uppercase text-white group-hover:text-[#eb0028] transition-colors z-10"
         >
           {name}
         </h2>
@@ -240,7 +218,7 @@ const ExecutiveCommitteeItem = ({ name, image, side }) => {
 const ExecutiveCommittee = () => {
   return (
     <div className="mt-24 md:mt-32 mb-16">
-      <h2 className="font-headline text-5xl md:text-7xl font-black tracking-tighter uppercase mb-8 md:mb-12 text-white px-4 md:px-0">
+      <h2 className="font-headline text-5xl md:text-7xl tracking-[0.015em] uppercase mb-8 md:mb-12 text-white px-4 md:px-0">
         Executive <span className="text-[#eb0028]">Committee</span>
       </h2>
 
@@ -269,11 +247,13 @@ const ExecutiveCommittee = () => {
 };
 
 const Team = () => {
+  // brief fade-in only; the full-screen splash that used to gate the page
+  // duplicated the navbar's TEAM title and blocked content for a second
   const [isIntroActive, setIsIntroActive] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const timer = setTimeout(() => setIsIntroActive(false), 1000);
+    const timer = setTimeout(() => setIsIntroActive(false), 350);
     return () => clearTimeout(timer);
   }, []);
 
@@ -284,10 +264,12 @@ const Team = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-white relative">
-      <IntroOverlay isActive={isIntroActive} />
 
-      <main className={`flex-1 w-full max-w-[1440px] mx-auto px-0 md:px-12 pt-8 pb-24 relative transition-opacity duration-1000 ${isIntroActive ? 'opacity-30' : 'opacity-100'}`}>
-        <Hero isIntroActive={isIntroActive} />
+      <main className={`flex-1 w-full max-w-[1440px] mx-auto px-0 md:px-12 pt-8 pb-24 relative transition-opacity duration-1000 ${isIntroActive ? 'opacity-0' : 'opacity-100'}`}>
+        {/* The visible page name is the one in the navbar. This keeps the
+            document's level-1 heading for assistive tech and search engines
+            without printing TEAM twice down the screen. */}
+        <h1 className="sr-only">Our Team</h1>
         
         {/* Parabolic Matrix for Desktop */}
         <div className="hidden md:block">

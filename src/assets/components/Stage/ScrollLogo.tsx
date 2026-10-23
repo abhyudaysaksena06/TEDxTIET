@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import type { RefObject } from "react";
 import StageScene from "./StageScene";
 import useScrollProgress from "../../hooks/useScrollProgress";
@@ -48,8 +48,6 @@ interface Props {
     onSelect?: () => void;
 }
 
-/** half of the title crossfade: out, swap, back in */
-const SWAP_FADE_MS = 420;
 
 export default function ScrollLogo({
     scrollRootRef,
@@ -64,41 +62,12 @@ export default function ScrollLogo({
     // "as soon as I scroll" — any progress at all freezes cursor/drag rotation
     frozenRef.current.frozen = active && progress > 0;
 
-    // The 3D title can't tween between two different letter meshes, so the swap
-    // is hidden inside a crossfade: dim all the way out, rebuild the geometry
-    // while nothing is visible, then bring it back up.
-    const [titleMode, setTitleMode] = useState<'logo' | 'archive'>('logo');
-    const [swapping, setSwapping] = useState(false);
-    // true for the whole out-and-back window; gates the CSS transition so it
-    // can't add lag to the scroll-driven fade later on
-    const [swapActive, setSwapActive] = useState(false);
-
-    // `titleMode` is read through a ref, NOT listed as a dependency. It used to
-    // be one, so calling setTitleMode below re-ran this effect, and the cleanup
-    // cancelled its own still-pending `setSwapActive(false)` timer. swapActive
-    // then stayed true forever, and since onSelect is suppressed while it is
-    // true, the title could never be clicked back to TEDxTIET.
-    const modeRef = useRef(titleMode);
-    modeRef.current = titleMode;
-
-    useEffect(() => {
-        const wanted = active ? 'archive' : 'logo';
-        if (wanted === modeRef.current) return;
-
-        setSwapActive(true);
-        setSwapping(true);
-        const swap = setTimeout(() => {
-            setTitleMode(wanted);
-            // one more frame at zero so the new mesh is never seen popping in
-            requestAnimationFrame(() => setSwapping(false));
-        }, SWAP_FADE_MS);
-        const done = setTimeout(() => setSwapActive(false), SWAP_FADE_MS * 2 + 60);
-
-        return () => {
-            clearTimeout(swap);
-            clearTimeout(done);
-        };
-    }, [active]);
+    // The crossfade between TEDxTIET and ARCHIVE OF VOICES lives inside
+    // StageScene now, driven from its render loop. It used to be staged here
+    // with two setTimeouts and a CSS opacity dip, which could not line up with
+    // the moment the new meshes actually existed — so the title popped. Here we
+    // only say WHICH title we want; the scene handles getting there.
+    const titleMode: 'logo' | 'archive' = active ? 'archive' : 'logo';
 
     // The logo never leaves its pose — it fades out to clear the screen for the
     // reel, holds hidden, then fades back in. Three phases:
@@ -124,19 +93,18 @@ export default function ScrollLogo({
     const x = stageW ? ((OUTLINE_CENTER.x - 50) / 100) * stageW : START_TRANSFORM.x * k;
     const y = stageH ? ((OUTLINE_CENTER.y - 50) / 100) * stageH : START_TRANSFORM.y * k;
     const scale = START_TRANSFORM.scale * k;
-    // during the swap the title dips to zero regardless of scroll state
-    const shown = swapping ? 0 : opacity;
+    const shown = opacity;
 
     return (
         <div
             className="absolute inset-0 z-10"
             style={{
-                // a hair of scale on the dip makes the crossfade feel intentional
-                transform: `translate(${x}px, ${y}px) scale(${scale * (swapping ? 0.965 : 1)})`,
+                transform: `translate(${x}px, ${y}px) scale(${scale})`,
                 opacity: shown,
-                transition: swapActive
-                    ? `opacity ${SWAP_FADE_MS}ms cubic-bezier(0.4,0,0.2,1), transform ${SWAP_FADE_MS}ms cubic-bezier(0.4,0,0.2,1)`
-                    : 'none',
+                // no CSS transition: this opacity is scroll-driven and must
+                // track the scrollbar exactly. The title change is animated
+                // inside the scene instead.
+                transition: 'none',
                 // fully faded out: stop it swallowing pointer events over the reel
                 pointerEvents: shown < 0.05 ? "none" : "auto",
             }}
@@ -144,9 +112,9 @@ export default function ScrollLogo({
             <StageScene
                 frozenRef={frozenRef}
                 mode={titleMode}
-                // clickable in both modes so the title toggles back and forth;
-                // suppressed mid-crossfade so a double-click can't desync it
-                onSelect={swapActive ? undefined : onSelect}
+                // always clickable: the scene reads its target mode every frame,
+                // so clicking mid-transition just reverses it
+                onSelect={onSelect}
             />
         </div>
     );

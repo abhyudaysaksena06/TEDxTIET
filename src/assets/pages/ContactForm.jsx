@@ -84,7 +84,8 @@ export default function ContactForm() {
     return (
         <div className="contact-form-container">
             <div className="login-box">
-                <h1>Contact Us</h1>
+                {/* the bar says CONTACT — see alumni.jsx */}
+                <h1 className="sr-only">Contact Us</h1>
 
                 <form ref={formRef} onSubmit={sendEmail}>
                     {/* every label is tied to its input by id — they were plain
