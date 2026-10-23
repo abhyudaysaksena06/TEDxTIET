@@ -80,9 +80,6 @@ export default function CarpetFigure({
     // slides the other way, which is what makes the lean read as physical.
     useEffect(() => {
         if (!visible) return;
-        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (reduced) return;
-
         const paint = () => {
             frame.current = 0;
             // ease toward the pointer rather than snapping to it

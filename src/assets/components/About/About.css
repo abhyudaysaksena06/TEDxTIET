@@ -353,20 +353,6 @@
 /* disabling keyframe animations and removing generated pseudo-content.)  */
 /* ---------------------------------------------------------------------- */
 
-@media (prefers-reduced-motion: reduce) {
-  .about-scroll-chevron,
-  .timeline__node-ring,
-  .about-stage::before,
-  .about-stage::after,
-  .content-card-stage::before,
-  .content-card-stage::after {
-    animation: none;
-  }
-
-  .timeline__rail-fill {
-    transition: none;
-  }
-}
 
 @media (max-width: 768px) {
   .about-inner::before,

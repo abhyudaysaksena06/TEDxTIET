@@ -212,11 +212,21 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         const placeholderTex = makePlaceholderTexture();
         disposables.push(tileGeo, placeholderTex);
 
-        /** resting orientation: face pointing radially outward */
-        const restQuat = (outward: THREE.Vector3) =>
-            new THREE.Quaternion().setFromRotationMatrix(
-                new THREE.Matrix4().lookAt(new THREE.Vector3(), outward, UP)
+        /**
+         * Resting orientation: face pointing radially outward, upright.
+         *
+         * lookAt degenerates when the facing direction is parallel to the up
+         * reference, which is exactly what happens at the sphere's poles — the
+         * tiles there came out arbitrarily rolled. Near a pole the reference
+         * swaps to FRONT, which is perpendicular there, so every tile gets a
+         * sensible upright.
+         */
+        const restQuat = (outward: THREE.Vector3) => {
+            const up = Math.abs(outward.dot(UP)) > 0.95 ? FRONT : UP;
+            return new THREE.Quaternion().setFromRotationMatrix(
+                new THREE.Matrix4().lookAt(new THREE.Vector3(), outward, up)
             );
+        };
 
         positions.forEach((pos, i) => {
             const isPlaceholder = i % 2 === 1;
@@ -339,6 +349,21 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             } else {
                 const dir = tile.position.clone().normalize();
                 alignTarget.setFromUnitVectors(dir, FRONT);
+
+                // setFromUnitVectors squares the tile to the camera but leaves
+                // an arbitrary ROLL, which is what used to be corrected by
+                // spinning the tile itself — two rotations at once, and the
+                // photo tumbled. Roll the BODY instead: work out which way the
+                // tile's own up will be pointing once the alignment lands, and
+                // fold the correction into the alignment. The tile then never
+                // rotates at all; it only scales and comes forward.
+                const upAfter = new THREE.Vector3(0, 1, 0)
+                    .applyQuaternion(restQuat(tile.userData.outward as THREE.Vector3))
+                    .applyQuaternion(alignTarget);
+                const roll = Math.atan2(upAfter.x, upAfter.y);
+                alignTarget.premultiply(
+                    new THREE.Quaternion().setFromAxisAngle(FRONT, -roll)
+                );
                 targetLift = 0;
             }
         };
@@ -358,6 +383,15 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         let downY = 0;
         let moved = 0;
         let lastMoveT = 0;
+        /**
+         * Which way this gesture is going. Without this a diagonal swipe spun
+         * the body AND panned it at the same time, so on a phone the cylinder
+         * appeared to do something unrelated to the finger. The axis is decided
+         * once, after the gesture has travelled far enough to have a direction,
+         * and holds for the rest of the drag.
+         */
+        let axis: null | "x" | "y" = null;
+        const AXIS_LOCK_PX = 8;
         let velX = 0; // radians / second
         let velY = 0;
 
@@ -368,7 +402,12 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         // ---------- wheel zoom ----------
         // multiplies the resting camera distance. preventDefault stops the page
         // scrolling behind the canvas while the pointer is over the globe.
-        const ZOOM_MIN = 0.45;
+        // 0.45 against CAM_FAR 15 put the nearest camera position at z 6.75,
+        // and the shell's radius is 6.4 — you were stopped 0.35 units short of
+        // the surface, which is why you could never get inside. This takes it
+        // to the middle; the tiles are already DoubleSide so they stay visible
+        // from within, and the camera's near plane is 0.1.
+        const ZOOM_MIN = 0.03;
         const ZOOM_MAX = 1.9;
         let zoom = 1;
         const onWheel = (e: WheelEvent) => {
@@ -400,6 +439,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
 
         const onDown = (e: PointerEvent) => {
             dragging = true;
+            axis = null;
             lastX = downX = e.clientX;
             lastY = downY = e.clientY;
             moved = 0;
@@ -420,18 +460,30 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             const dt = Math.max(1, now - lastMoveT) / 1000;
             const dx = e.clientX - lastX;
             const dy = e.clientY - lastY;
-            moved = Math.max(moved, Math.hypot(e.clientX - downX, e.clientY - downY));
+            const totalX = e.clientX - downX;
+            const totalY = e.clientY - downY;
+            moved = Math.max(moved, Math.hypot(totalX, totalY));
+
+            // commit to an axis once there is enough travel to read one
+            if (axis === null && moved > AXIS_LOCK_PX) {
+                axis = Math.abs(totalX) >= Math.abs(totalY) ? "x" : "y";
+            }
 
             // move the body with the finger, right now — this is what reads as
             // grabbing it. Velocity is recorded only for the throw on release.
-            const ry = dx * SENS;
-            const rx = CYL ? 0 : dy * SENS; // a cylinder must not tip; it pans
+            // before the axis is known, follow the finger on both; after, only
+            // the committed one moves
+            const useX = axis !== "y";
+            const useY = axis !== "x";
+
+            const ry = useX ? dx * SENS : 0;
+            const rx = !CYL && useY ? dy * SENS : 0; // a cylinder must not tip; it pans
             applySpin(rx, ry);
 
             velY = ry / dt;
             velX = rx / dt;
 
-            if (CYL) {
+            if (CYL && useY) {
                 // px -> world units at the body's depth, so the rows track the
                 // finger exactly rather than at some arbitrary rate
                 const visibleH = 2 * camera.position.z * Math.tan((45 / 2) * (Math.PI / 180));
@@ -502,14 +554,10 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         });
         io.observe(mount);
 
-        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         // ---------- loop ----------
         const clock = new THREE.Clock();
         const wantQuat = new THREE.Quaternion();
-        // scratch for the focused tile's swing-twist decomposition
-        const rel = new THREE.Quaternion();
-        const twist = new THREE.Quaternion();
         let spawnTimer = 0;
         let frameId = 0;
 
@@ -528,7 +576,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 const damp = Math.pow(0.12, dt);
                 velY *= damp;
                 velX *= damp;
-                if (!focused && !reduced) {
+                if (!focused) {
                     // rad/s. At the old 0.09 a full revolution took 70 seconds,
                     // so the globe looked frozen; this brings it to ~28s, slow
                     // enough to read a frame but clearly alive.
@@ -540,10 +588,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
 
             // dust drifts the other way and a touch slower, so the globe reads
             // as turning inside a space rather than against a flat backdrop
-            if (!reduced) {
-                dust.rotation.y -= dt * 0.035;
-                dust.rotation.x += dt * 0.008;
-            }
+            dust.rotation.y -= dt * 0.035;
+            dust.rotation.x += dt * 0.008;
 
             // cylinder: slide the body so the focused row sits on the eye line
             lift += (targetLift - lift) * Math.min(1, dt * 5);
@@ -573,28 +619,11 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 const target = tile === focused ? 1.85 : tile === hovered ? 1.28 : 1;
                 tile.scale.setScalar(tile.scale.x + (target - tile.scale.x) * Math.min(1, dt * 9));
 
-                // The focused tile turns square-on to the camera as it comes
-                // forward. Cancelling the world rotation faces the viewer, but
-                // on its own it also forces world-up, and the roll between that
-                // and the tile's resting orientation was up to 180 degrees —
-                // which is the "flip" you saw before the photo settled.
-                // Swing-twist: keep the camera-facing swing, then re-apply the
-                // tile's OWN roll about the view axis, so the move is the
-                // shortest one that squares it up and never tumbles.
-                if (tile === focused) {
-                    wantQuat.copy(world.quaternion).invert();
-                    rel.copy(wantQuat).invert().multiply(
-                        restQuat(tile.userData.outward as THREE.Vector3)
-                    );
-                    // twist component about local Z (the view axis)
-                    twist.set(0, 0, rel.z, rel.w);
-                    if (twist.lengthSq() > 1e-8) {
-                        twist.normalize();
-                        wantQuat.multiply(twist);
-                    }
-                } else {
-                    wantQuat.copy(restQuat(tile.userData.outward as THREE.Vector3));
-                }
+                // No special case for the focused tile any more. The body's
+                // alignment already squares it to the camera and now carries
+                // the upright roll too, so the photo keeps the orientation it
+                // has and simply scales up — no flip, no settle.
+                wantQuat.copy(restQuat(tile.userData.outward as THREE.Vector3));
                 tile.quaternion.slerp(wantQuat, Math.min(1, dt * 5));
             });
             canvas.style.cursor = dragging ? "grabbing" : hovered ? "pointer" : "grab";

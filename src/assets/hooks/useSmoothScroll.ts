@@ -14,9 +14,6 @@ import Lenis from "lenis";
  */
 export function useSmoothScroll() {
     useEffect(() => {
-        // respect users who've asked the OS for reduced motion
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
         const lenis = new Lenis({
             // Longer settle and a shorter throw per notch. The home page packs a
             // 700vh reel track behind one screen, so at a 1:1 wheel multiplier a

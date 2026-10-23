@@ -59,24 +59,6 @@ function normalizePath(path: string) {
 }
 
 /**
- * Framer skips animated properties outright under prefers-reduced-motion, so
- * the bars would stay at height 0 and leave the panel see-through. For those
- * users only, the panel paints its own red ground. Anyone with motion enabled
- * gets the untouched animation and never sees this.
- */
-function usePrefersReducedMotion() {
-    const [reduced, setReduced] = useState(false);
-    useEffect(() => {
-        const q = window.matchMedia("(prefers-reduced-motion: reduce)");
-        const sync = () => setReduced(q.matches);
-        sync();
-        q.addEventListener("change", sync);
-        return () => q.removeEventListener("change", sync);
-    }, []);
-    return reduced;
-}
-
-/**
  * How the page is being scrolled, so the bar can earn its background instead
  * of wearing one permanently (and instead of a backdrop-blur, which smeared
  * the artwork under it and cost a full-width filter pass every frame).
@@ -116,7 +98,6 @@ function useScrollState() {
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const { atTop, hidden } = useScrollState();
-    const reduced = usePrefersReducedMotion();
     const panelRef = useRef<HTMLDivElement>(null);
     const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -268,8 +249,6 @@ export default function Navbar() {
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        // only for people who asked for less motion; see the hook
-                        style={reduced ? { backgroundColor: RED } : undefined}
                     >
                         {/* five columns, original variants */}
                         {[...Array(5)].map((_, i) => (

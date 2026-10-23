@@ -43,18 +43,6 @@ const T = {
     label: 210,
 };
 
-function usePrefersReducedMotion() {
-    const [reduced, setReduced] = useState(false);
-    useEffect(() => {
-        const q = window.matchMedia("(prefers-reduced-motion: reduce)");
-        const sync = () => setReduced(q.matches);
-        sync();
-        q.addEventListener("change", sync);
-        return () => q.removeEventListener("change", sync);
-    }, []);
-    return reduced;
-}
-
 /**
  * Fires once, and not until `threshold` of the section is actually on screen —
  * at 0.15 the sequence started the instant the first sliver appeared, so it
@@ -106,11 +94,6 @@ function Counter({
 
     useEffect(() => {
         if (!run) return;
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            setN(target);
-            return;
-        }
-
         const DURATION = 1600;
         let frame = 0;
         let start = 0;
@@ -291,16 +274,13 @@ function StatRow({
     stat,
     index,
     run,
-    reduced,
 }: {
     stat: ImpactStat;
     index: number;
     run: boolean;
-    reduced: boolean;
 }) {
     const Mark = MARKS[stat.mark];
-    // no waiting around for anyone who asked for less motion
-    const base = reduced ? 0 : T.firstRow + index * T.rowStep;
+    const base = T.firstRow + index * T.rowStep;
 
     return (
         <li className="relative">
@@ -349,7 +329,7 @@ function StatRow({
                 </div>
 
                 <div className="md:col-span-5">
-                    <Mark run={run} at={base + (reduced ? 0 : T.mark)} />
+                    <Mark run={run} at={base + T.mark} />
                 </div>
 
                 <div
@@ -401,7 +381,6 @@ function StatRow({
 
 export default function ImpactSection() {
     const { ref, seen } = useInView<HTMLElement>(0.4);
-    const reduced = usePrefersReducedMotion();
 
     return (
         <section
@@ -500,7 +479,6 @@ export default function ImpactSection() {
                             stat={stat}
                             index={i}
                             run={seen}
-                            reduced={reduced}
                         />
                     ))}
                 </ul>

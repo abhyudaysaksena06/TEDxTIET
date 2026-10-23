@@ -95,22 +95,12 @@ html {
     100% { background-position: 0 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .gallery-grain {
-        animation: none !important;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
+/* NOTE: this site deliberately does NOT gate animation on
+   prefers-reduced-motion. The global rule that used to live here collapsed
+   every animation to 0.01ms, which silently broke the preloader, the menu
+   bars, the hamburger and the gallery's idle spin — the motion IS the
+   interface here, and on the owner's own machine the OS setting was costing
+   far more than it gave. Asked for and signed off by the site owner. */
 
 body::-webkit-scrollbar,
 html::-webkit-scrollbar {
