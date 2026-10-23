@@ -120,9 +120,12 @@ export default function Footer() {
             />
 
             {/* ---- top row: three bordered destinations ---- */}
+            {/* Below `sm` the meta line in each cell is hidden, so the desktop
+                row height left a band of empty black above the labels. The row
+                is only as tall as it needs to be until that line is shown. */}
             <div
-                className="relative grid shrink-0 grid-cols-3 border-y"
-                style={{ height: "clamp(5.5rem, 15.5svh, 7.5rem)", borderColor: RULE }}
+                className="relative grid h-[4.25rem] shrink-0 grid-cols-3 border-y sm:h-[clamp(5.5rem,15.5svh,7.5rem)]"
+                style={{ borderColor: RULE }}
             >
                 {BIG_LINKS.map((l) => (
                     <div
