@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import RouteTitle from './components/RouteTitle';
 import { motion } from 'framer-motion';
 import Navbar from './components/Navbar';
 import ScrollLogo from './components/Stage/ScrollLogo';
@@ -67,6 +68,7 @@ export default function App() {
 
     return (
         <BrowserRouter>
+            <RouteTitle />
             <Navbar />
             <Suspense
                 fallback={
