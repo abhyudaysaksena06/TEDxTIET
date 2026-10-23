@@ -18,8 +18,16 @@ import { filmFramesData } from "../Reel/filmData";
  * performer stays seated.
  */
 
-/** carpet centre, as a percentage of the stage box */
-export const CARPET = { x: 49.93, y: 65.69 };
+/**
+ * Where the speaker stands, as a percentage of the stage box.
+ *
+ * Scanning HOME_BG's pixels put the carpet's geometric centre at 49.93 / 65.69,
+ * but the ellipse is 8.2% deep and seen in perspective — standing dead centre
+ * reads as hovering behind it. This is the point picked on the stage itself
+ * (?place=1), a little forward of centre so the feet meet the front of the
+ * circle, which is where someone addressing the room would actually stand.
+ */
+export const CARPET = { x: 50.99, y: 67.94 };
 
 /** figure height as a share of the stage height — a person at that distance */
 export const FIGURE_H = 12;
