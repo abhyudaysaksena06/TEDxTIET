@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import useIsPhone from "../../hooks/useIsPhone";
 import { PHOTO_ASPECTS, IMAGE_COUNT } from "./galleryPhotos";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { layoutWordmark } from "../Stage/wordmark";
 
 /**
@@ -176,20 +177,45 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         disposables.push(dustGeo, dustMat);
 
         // ---------- backdrop wordmark ----------
-        // The home page's 3D TEDxTIET, as faint glass behind the photographs,
-        // so the gallery reads as part of the same site. It is drawn into
-        // THIS scene: a second canvas would mean a second WebGL context, and
-        // running out of those is what once blanked the whole site. It hangs
-        // off the scene rather than the world, so it holds still while the
-        // photographs turn in front of it, and it draws first without writing
-        // depth, so it can never hide a tile. Clicks only test tiles.
+        // The home page's 3D TEDxTIET, standing behind the photographs so the
+        // gallery reads as part of the same site. It is drawn into THIS scene:
+        // a second canvas would mean a second WebGL context, and running out
+        // of those is what once blanked the whole site. It hangs off the scene
+        // rather than the world, so it holds still while the photographs turn
+        // in front of it. Clicks only test tiles.
         const BACKDROP_Z = CYL ? -10 : -15;
+        /** the whole mark at 80%: solid, with the page just showing through */
+        const BACKDROP_OPACITY = 0.8;
         const backdrop = new THREE.Group();
         backdrop.position.z = BACKDROP_Z;
         scene.add(backdrop);
 
+        // The hero's lighting, so this is the same object rather than a flat
+        // copy: a soft room reflection, a strong light from above that leaves
+        // the undersides in shadow, and a dim front fill. Only lit materials
+        // respond and every photograph is unlit, so none of it touches them.
+        // The hero's tone mapping is left out for the same reason: it is
+        // renderer-wide and would shift the photographs' colour.
+        {
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            const room = new RoomEnvironment();
+            const envTex = pmrem.fromScene(room, 0.04).texture;
+            room.dispose();
+            pmrem.dispose();
+            scene.environment = envTex;
+            scene.environmentIntensity = 0.18;
+            disposables.push(envTex);
+
+            const topLight = new THREE.DirectionalLight(0xffffff, 2.2);
+            topLight.position.set(0, 12, 4);
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.45);
+            fillLight.position.set(-4, 4, 8);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.05), topLight, fillLight);
+        }
+
+        // The hero's materials, at the backdrop's opacity.
         const backdropMats: { mat: THREE.Material; base: number }[] = [];
-        const faint = <M extends THREE.Material>(mat: M, base: number) => {
+        const atOpacity = <M extends THREE.Material>(mat: M, base = BACKDROP_OPACITY) => {
             mat.transparent = true;
             mat.depthWrite = false;
             mat.opacity = base;
@@ -197,32 +223,70 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             disposables.push(mat);
             return mat;
         };
-        // faces and walls in different tones, so the extrusion reads as solid
-        const glass = {
-            red: [
-                faint(new THREE.MeshBasicMaterial({ color: 0xeb0028 }), 0.17),
-                faint(new THREE.MeshBasicMaterial({ color: 0x4a000c }), 0.24),
-            ],
-            white: [
-                faint(new THREE.MeshBasicMaterial({ color: 0xffffff }), 0.12),
-                faint(new THREE.MeshBasicMaterial({ color: 0x5c5c5c }), 0.2),
-            ],
+        const redGlass = atOpacity(
+            new THREE.MeshPhysicalMaterial({
+                color: 0xcc1212,
+                roughness: 0.45,
+                metalness: 0.1,
+                clearcoat: 0.3,
+                clearcoatRoughness: 0.5,
+                emissive: 0xff2828,
+                emissiveIntensity: 0.22,
+            })
+        );
+        const redBezel = atOpacity(
+            new THREE.MeshStandardMaterial({ color: 0xd8d8d8, metalness: 0.9, roughness: 0.35 })
+        );
+        const whiteGlass = atOpacity(
+            new THREE.MeshPhysicalMaterial({
+                color: 0xf2f2f2,
+                roughness: 0.62,
+                metalness: 0.05,
+                clearcoat: 0.25,
+                clearcoatRoughness: 0.6,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.24,
+            })
+        );
+        const whiteBezel = atOpacity(
+            new THREE.MeshStandardMaterial({ color: 0x8f8f8f, metalness: 0.85, roughness: 0.45 })
+        );
+        // faces and flat walls are glass, the bevel strips metal — as the hero
+        const finish = {
+            red: [redGlass, redGlass, redBezel],
+            white: [whiteGlass, whiteGlass, whiteBezel],
         };
         const rim = {
-            red: faint(new THREE.LineBasicMaterial({ color: 0xff3a52 }), 0.4),
-            white: faint(new THREE.LineBasicMaterial({ color: 0xffffff }), 0.28),
+            red: atOpacity(new THREE.LineBasicMaterial({ color: 0xc8c8c8 }), 0.85 * BACKDROP_OPACITY),
+            white: atOpacity(new THREE.LineBasicMaterial({ color: 0x606060 }), 0.85 * BACKDROP_OPACITY),
         };
+
+        // Solid at 80%, not see-through glass. Blending each surface at 80%
+        // on its own would show every letter's back walls and hidden edges
+        // through its front, so a depth-only copy of the letters goes down
+        // first and the coloured pass then keeps only the nearest surface at
+        // each pixel. The depth copy is nudged back a hair so edge lines on
+        // visible corners still pass while the ones behind are hidden.
+        const depthOnly = new THREE.MeshBasicMaterial({
+            colorWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1,
+        });
+        disposables.push(depthOnly);
 
         const mark = layoutWordmark();
         mark.parts.forEach(({ geometry, tone, position }) => {
-            const letters = new THREE.Mesh(geometry, glass[tone]);
-            letters.position.copy(position);
-            letters.renderOrder = -1;
+            const depth = new THREE.Mesh(geometry, depthOnly);
+            const letters = new THREE.Mesh(geometry, finish[tone]);
             const edgeGeo = new THREE.EdgesGeometry(geometry, 25);
             const edges = new THREE.LineSegments(edgeGeo, rim[tone]);
+            // depth first, then colour, then edges, all before any photograph
+            depth.renderOrder = -3;
+            letters.renderOrder = -2;
             edges.renderOrder = -1;
-            letters.add(edges);
-            backdrop.add(letters);
+            [depth, letters, edges].forEach((o) => o.position.copy(position));
+            backdrop.add(depth, letters, edges);
             disposables.push(geometry, edgeGeo);
         });
 

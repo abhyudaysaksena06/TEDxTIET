@@ -34,17 +34,18 @@ export interface WordmarkPart {
 }
 
 /**
- * Split a text geometry into material groups: 0 for the front and back
- * faces, 1 for the side walls and bevels. The extrusion only reads as 3D if
- * the walls are a different tone from the faces.
+ * Split a text geometry into material groups the way the hero does:
+ * 0 for the front and back faces, 1 for the flat side walls, 2 for the angled
+ * bevel strips. The hero makes faces and walls glass and the bevels metal, so
+ * the same three-material array gives the same finish here.
  */
-function groupFacesAndSides(geo: THREE.BufferGeometry) {
+function groupLikeHero(geo: THREE.BufferGeometry) {
     const normal = geo.getAttribute("normal");
     geo.clearGroups();
     for (let i = 0; i < normal.count; i += 3) {
         const nz =
             (Math.abs(normal.getZ(i)) + Math.abs(normal.getZ(i + 1)) + Math.abs(normal.getZ(i + 2))) / 3;
-        geo.addGroup(i, 3, nz > 0.98 ? 0 : 1);
+        geo.addGroup(i, 3, nz > 0.98 ? 0 : nz < 0.08 ? 1 : 2);
     }
 }
 
@@ -54,7 +55,7 @@ export function layoutWordmark(): { parts: WordmarkPart[]; width: number; height
     const make = (text: string, size: number) => {
         const geo = new TextGeometry(text, { ...WORDMARK_TEXT, font: f, size });
         geo.computeBoundingBox();
-        groupFacesAndSides(geo);
+        groupLikeHero(geo);
         return geo;
     };
     const w = (g: THREE.BufferGeometry) => g.boundingBox!.max.x - g.boundingBox!.min.x;
