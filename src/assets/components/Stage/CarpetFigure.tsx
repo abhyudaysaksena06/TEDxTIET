@@ -24,15 +24,26 @@ const CARPET = { x: 49.93, y: 65.69 };
 /** figure height as a share of the stage height — a person at that distance */
 const FIGURE_H = 30;
 
+/**
+ * Every cut-out renders at the same height, which is right for the nine
+ * standing speakers but wrong for Keshav: he performed seated with a guitar,
+ * and a seated silhouette drawn to a standing person's height reads as a giant.
+ * Scaled to roughly the proportion a seated figure actually occupies.
+ */
+const HEIGHT_FACTOR: Record<string, number> = {
+    keshav2: 0.62,
+};
+
 /** how far the figure leans toward the pointer */
 const LEAN_DEG = 7;
 const SHIFT_PX = 10;
 
 /** the matted counterpart of each reel frame */
-const CUTOUTS = filmFramesData.map((f) => ({
-    name: f.name,
-    src: f.image.replace("/Speakers/", "/Speakers/cut/"),
-}));
+const CUTOUTS = filmFramesData.map((f) => {
+    const src = f.image.replace("/Speakers/", "/Speakers/cut/");
+    const key = src.split("/").pop()!.replace(".webp", "");
+    return { name: f.name, src, heightFactor: HEIGHT_FACTOR[key] ?? 1 };
+});
 
 interface Props {
     /** index into filmFramesData of the speaker nearest the screen centre */
@@ -134,8 +145,9 @@ export default function CarpetFigure({ index, visible }: Props) {
                         key={c.src}
                         src={c.src}
                         alt=""
-                        className="absolute bottom-0 left-0 h-full w-auto max-w-none -translate-x-1/2 select-none"
+                        className="absolute bottom-0 left-0 w-auto max-w-none -translate-x-1/2 select-none"
                         style={{
+                            height: `${c.heightFactor * 100}%`,
                             opacity: i === index ? 1 : 0,
                             transition: "opacity 520ms ease",
                             // lit from above like the rest of the stage
