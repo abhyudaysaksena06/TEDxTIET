@@ -147,7 +147,16 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
         camera.position.set(0, 0, CAM_FAR);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        // see StageScene: a refused WebGL context throws, and an effect that
+        // throws unmounts the whole app. The gallery degrades to its background
+        // rather than taking the page down.
+        let renderer: THREE.WebGLRenderer;
+        try {
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        } catch (err) {
+            console.warn("TEDxTIET: gallery disabled, no WebGL context available.", err);
+            return;
+        }
         renderer.setClearColor(0x000000, 0);
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

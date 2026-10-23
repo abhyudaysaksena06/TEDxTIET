@@ -50,7 +50,18 @@ function StageScene({ idleRef, frozenRef, mode = 'logo', onSelect } = {}) {
     camera.position.set(0, 1.6, 13)
     camera.lookAt(LOGO_AT)
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    // A browser can refuse a WebGL context — it caps how many a page may hold,
+    // and blocks new ones after repeated context loss. The constructor THROWS
+    // when that happens, and an effect that throws takes the whole React tree
+    // with it: the site went black because a decorative 3D wordmark could not
+    // get a canvas. It degrades to nothing instead.
+    let renderer
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    } catch (err) {
+      console.warn('TEDxTIET: 3D wordmark disabled, no WebGL context available.', err)
+      return
+    }
     renderer.setClearColor(0x000000, 0)
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
