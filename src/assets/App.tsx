@@ -76,9 +76,9 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/home" element={<Navigate to="/" replace />} />
-                {/* clone of the home page with the carpet figure switched on,
-                    so the live hero is untouched while it is being judged */}
-                <Route path="/stage-lab" element={<HomePage lab />} />
+                {/* kept as an alias of the home page: the carpet figure it was
+                    built to try out now ships on / itself */}
+                <Route path="/stage-lab" element={<Navigate to="/" replace />} />
                 <Route path="/register" element={<RegistrationPage />} />
                 {/* the globe owns the whole viewport here — no shell, no page scroll */}
                 <Route path="/gallery" element={<SphereGallery fullPage />} />
@@ -97,7 +97,7 @@ export default function App() {
 /** intrinsic aspect of HOME_BG.webp (1375x768) */
 const HERO_IMAGE_ASPECT = 1375 / 768;
 
-function HomePage({ lab = false }: { lab?: boolean }) {
+function HomePage() {
     const scrollRootRef = useRef<HTMLDivElement>(null);
     const stageHostRef = useRef<HTMLDivElement>(null);
     // phones fit the photo to the WIDTH so it isn't squeezed into a tall
@@ -214,16 +214,14 @@ function HomePage({ lab = false }: { lab?: boolean }) {
                                 {archiveOpen && (
                                     <ReelOnScreen
                                         scrollRootRef={scrollRootRef}
-                                        onCentre={lab ? setCentreSpeaker : undefined}
+                                        onCentre={setCentreSpeaker}
                                     />
                                 )}
 
-                                {lab && (
-                                    <CarpetFigure
-                                        index={centreSpeaker}
-                                        visible={archiveOpen}
-                                    />
-                                )}
+                                <CarpetFigure
+                                    index={centreSpeaker}
+                                    visible={archiveOpen}
+                                />
                             </div>
 
                             {/* Caption rail sits on the viewport, not the stage, so it keeps
