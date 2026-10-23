@@ -204,10 +204,38 @@ export default function Navbar() {
                     />
                 </Link>
 
+                {/* The page title, deliberately NOT boxed inside the bar.
+                    It hangs off the bar's lower edge and overflows it, so the
+                    bar gains no divider or background of its own while the
+                    title is big enough to actually carry the page. One
+                    treatment, identical on every route. */}
                 {pageTitle && !isOpen && (
-                    <span className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 font-mono text-[11px] uppercase tracking-[0.34em] text-white/70 sm:block">
-                        {pageTitle}
-                    </span>
+                    <div className="pointer-events-none absolute inset-x-0 top-full -mt-2 flex justify-center px-5">
+                        <span className="relative block">
+                            <span
+                                className="block font-['Anton'] uppercase leading-[0.85] text-white"
+                                style={{
+                                    fontSize: "clamp(1.75rem, 6vw, 3.75rem)",
+                                    letterSpacing: "0.02em",
+                                    // the stage pages run bright under it
+                                    textShadow: "0 2px 18px rgba(0,0,0,0.65)",
+                                }}
+                            >
+                                {pageTitle}
+                            </span>
+                            {/* the rule is the accent — it runs past the word on
+                                both sides so the title reads as a masthead
+                                rather than a label sitting in a box */}
+                            <span
+                                aria-hidden="true"
+                                className="absolute -inset-x-3 -bottom-2 block h-[3px]"
+                                style={{
+                                    background:
+                                        "linear-gradient(to right, transparent, #eb0028 20%, #eb0028 80%, transparent)",
+                                }}
+                            />
+                        </span>
+                    </div>
                 )}
 
                 <button

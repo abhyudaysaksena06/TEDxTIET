@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Image9 from '../gridimages/Image9.webp';
 import Image7 from '../gridimages/Image7.webp';
 import Image10 from '../gridimages/Image10.webp';
@@ -10,208 +9,161 @@ import Image5 from '../gridimages/Image5.webp';
 import Image1 from '../gridimages/Image1.webp';
 import Image4 from '../gridimages/Image4.webp';
 
+/**
+ * Alumni.
+ *
+ * Rebuilt in the site's own language. The ported version arrived with its own
+ * identity — Playfair Display and DM Sans pulled in through an injected
+ * <style> tag, rounded cards, a red glow on hover — none of which appears
+ * anywhere else here. It now uses the same vocabulary as the team page and the
+ * footer: black ground, Anton display, IBM Plex Mono micro-type, hairline
+ * rules, square corners, and the ink wipe on hover.
+ *
+ * The page title lives in the navbar, so the h1 here is sr-only.
+ */
+
+const RED = '#eb0028';
+const RULE = '#232323';
+const MUTED = '#8a8a8a';
+
 const allAlumni = [
-  { name: "Japneet Khanna", url: "https://www.linkedin.com/in/japneet-khanna-069919288/", img: Image9 },
-  { name: "Pranjal Batish", url: "https://www.linkedin.com/in/pranjalbatish/", img: Image7 },
-  { name: "Tanay Mukker", url: "https://www.linkedin.com/in/tanay-mukker/", img: Image10 },
-  { name: "Aman", url: "https://www.linkedin.com/in/aman-aasees-kaur/", img: Image8 },
-  { name: "Shambhavi Sharma", url: "https://www.linkedin.com/in/shambhavi-sharma-42b04b258/", img: Image2 },
-  { name: "Amit Katoch", url: "https://www.linkedin.com/in/amit-katoch-5o5/", img: Image6 },
-  { name: "Raghav Jindal", url: "https://www.linkedin.com/in/raghavjindal17/", img: Image3 },
-  { name: "Rohit Arora", url: "https://www.linkedin.com/in/rohit-arora-93415024a/", img: Image5 },
-  { name: "Priyam Ganguli", url: "https://www.linkedin.com/in/priyam-ganguli/", img: Image1 },
-  { name: "Bhavya Arora", url: "https://www.linkedin.com/in/bhavya-arora-7a9381266/", img: Image4 },
+  { name: 'Japneet Khanna', url: 'https://www.linkedin.com/in/japneet-khanna-069919288/', img: Image9 },
+  { name: 'Pranjal Batish', url: 'https://www.linkedin.com/in/pranjalbatish/', img: Image7 },
+  { name: 'Tanay Mukker', url: 'https://www.linkedin.com/in/tanay-mukker/', img: Image10 },
+  { name: 'Aman Aasees Kaur', url: 'https://www.linkedin.com/in/aman-aasees-kaur/', img: Image8 },
+  { name: 'Shambhavi Sharma', url: 'https://www.linkedin.com/in/shambhavi-sharma-42b04b258/', img: Image2 },
+  { name: 'Amit Katoch', url: 'https://www.linkedin.com/in/amit-katoch-5o5/', img: Image6 },
+  { name: 'Raghav Jindal', url: 'https://www.linkedin.com/in/raghavjindal17/', img: Image3 },
+  { name: 'Rohit Arora', url: 'https://www.linkedin.com/in/rohit-arora-93415024a/', img: Image5 },
+  { name: 'Priyam Ganguli', url: 'https://www.linkedin.com/in/priyam-ganguli/', img: Image1 },
+  { name: 'Bhavya Arora', url: 'https://www.linkedin.com/in/bhavya-arora-7a9381266/', img: Image4 },
 ];
 
-function LinkedInIcon() {
+function AlumniCard({ name, url, img, index }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-    </svg>
+    <li className="group relative">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${name} on LinkedIn`}
+        className="block"
+      >
+        <div
+          className="relative overflow-hidden border transition-colors duration-500"
+          style={{ aspectRatio: '3 / 4', borderColor: RULE, backgroundColor: '#0d0d0d' }}
+        >
+          <img
+            src={img}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover opacity-85 grayscale transition-[filter,opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0"
+          />
+
+          {/* grade the foot of the frame so the index stays readable */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0) 45%)' }}
+          />
+
+          <span
+            aria-hidden="true"
+            className="absolute bottom-2 left-3 font-mono text-[10px] tabular-nums"
+            style={{ color: MUTED }}
+          >
+            {String(index + 1).padStart(2, '0')}
+          </span>
+
+          {/* the red rule wipes in from the left, as the footer and menu do */}
+          <span
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 h-[3px] w-full origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
+            style={{ backgroundColor: RED }}
+          />
+        </div>
+
+        <div className="mt-3 flex items-baseline justify-between gap-3">
+          <p className="font-['Anton'] text-base uppercase leading-tight tracking-[0.02em] text-white transition-colors duration-300 group-hover:text-[#eb0028] md:text-lg">
+            {name}
+          </p>
+          <span
+            aria-hidden="true"
+            className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            style={{ color: MUTED }}
+          >
+            in ↗
+          </span>
+        </div>
+      </a>
+    </li>
   );
 }
 
-function AlumniCard({ name, url, img }) {
-  const [hovered, setHovered] = useState(false);
-
+export default function Alumni() {
   return (
-    <div
-      className="alumni-card"
-      style={{
-        ...styles.card,
-        transform: hovered ? "translateY(-5px)" : "translateY(0)",
-        boxShadow: hovered ? "0 14px 36px rgba(255,0,0,0.2)" : "none",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={styles.imageWrapper}>
-        <img
-          src={img}
-          alt={name}
-          style={{
-            ...styles.cardImg,
-            filter: hovered ? "brightness(1) scale(1.05)" : "brightness(0.85) scale(1)",
-          }}
-          loading="lazy"
-        />
-        <div style={{...styles.overlay, opacity: hovered ? 1 : 0}}>
-           <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${name} on LinkedIn`}
-            style={styles.linkedinLink}
-            onClick={(e) => e.stopPropagation()}
+    <div className="relative min-h-screen bg-black text-white">
+      {/* the same faint grid the footer, impact and gallery sit on */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+          backgroundSize: 'clamp(70px, 8vw, 120px) clamp(70px, 8vw, 120px)',
+        }}
+      />
+
+      <main className="relative mx-auto w-full max-w-[1440px] px-5 pb-28 md:px-10">
+        {/* the navbar carries the page name — see the note in Navbar.tsx */}
+        <h1 className="sr-only">Alumni</h1>
+
+        <div className="grid gap-5 md:grid-cols-12 md:items-end md:gap-8">
+          <p
+            className="max-w-prose text-pretty font-body text-sm leading-relaxed md:col-span-7 md:text-base"
+            style={{ color: '#c9c7c2' }}
           >
-            <LinkedInIcon />
+            The people who built TEDxTIET before this team did — and where they
+            went next.
+          </p>
+
+          <p
+            className="font-mono text-[10px] uppercase tracking-[0.2em] md:col-span-5 md:text-right md:text-[11px]"
+            style={{ color: MUTED }}
+          >
+            {allAlumni.length} past organisers
+          </p>
+        </div>
+
+        <ul
+          className="mt-10 grid list-none grid-cols-2 gap-x-4 gap-y-8 border-t pt-8 sm:grid-cols-3 md:mt-14 md:grid-cols-4 md:gap-x-6 lg:grid-cols-5"
+          style={{ borderColor: RULE }}
+        >
+          {allAlumni.map((a, i) => (
+            <AlumniCard key={a.url} {...a} index={i} />
+          ))}
+        </ul>
+
+        <div
+          className="mt-16 flex flex-col gap-3 border-t px-0 pt-6 font-mono text-[10px] uppercase tracking-[0.2em] sm:flex-row sm:items-center sm:justify-between md:mt-24"
+          style={{ borderColor: RULE, color: MUTED }}
+        >
+          <p>Organised TEDxTIET before?</p>
+          <a
+            href="mailto:tedxtiet@thapar.edu"
+            className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
+          >
+            tedxtiet@thapar.edu
+            <span
+              aria-hidden="true"
+              className="transition-transform duration-300 group-hover:translate-x-1"
+            >
+              →
+            </span>
           </a>
         </div>
-      </div>
-      <div style={styles.cardInfo}>
-        <p style={styles.cardName}>{name}</p>
-      </div>
+      </main>
     </div>
   );
 }
-
-export default function AlumniPage() {
-  return (
-    <div style={styles.root}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-        
-        .alumni-container {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 30px;
-          justify-content: center;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .alumni-card {
-          flex: 0 0 100%;
-          max-width: 300px;
-        }
-
-        @media (min-width: 640px) {
-          .alumni-card { flex: 0 0 calc(50% - 30px); }
-        }
-
-        @media (min-width: 992px) {
-          .alumni-card { flex: 0 0 calc(33.33% - 30px); }
-        }
-
-        @media (min-width: 1200px) {
-          .alumni-card { flex: 0 0 calc(25% - 30px); }
-        }
-      `}</style>
-
-      {/* Header */}
-      <div style={styles.header}>
-        {/* the navbar carries the page name; this stays for assistive tech
-            and search engines so the page still has a level-1 heading */}
-        <h1 className="sr-only">Alumni</h1>
-        <p style={styles.subheading}>Honoring the visionaries who have shaped the TEDxTIET legacy and continue to inspire across the globe.</p>
-      </div>
-
-      {/* Content */}
-      <div className="alumni-container">
-        {allAlumni.map((a, i) => (
-          <AlumniCard key={i} {...a} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const styles = {
-  root: {
-    fontFamily: "'DM Sans', sans-serif",
-    background: "#050505",
-    minHeight: "100vh",
-    padding: "6rem 2rem",
-    color: "#fff",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "4rem",
-  },
-  heading: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: "3.5rem",
-    fontWeight: 700,
-    margin: "0 0 1rem",
-    letterSpacing: "-1px",
-    color: "#fff",
-  },
-  subheading: {
-    color: "#888",
-    fontSize: "1.1rem",
-    fontWeight: 300,
-    margin: 0,
-    letterSpacing: "1px",
-  },
-  card: {
-    position: "relative",
-    borderRadius: "15px",
-    overflow: "hidden",
-    background: "#111",
-    transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease",
-    border: "1px solid #222",
-  },
-  imageWrapper: {
-    position: "relative",
-    width: "100%",
-    height: "350px",
-    overflow: "hidden",
-  },
-  cardImg: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    objectPosition: "center",
-    display: "block",
-    transition: "all 0.6s ease",
-  },
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background: "rgba(0,0,0,0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "opacity 0.3s ease",
-    backdropFilter: "blur(2px)",
-  },
-  linkedinLink: {
-    background: "#0077b5",
-    color: "#fff",
-    width: "45px",
-    height: "45px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-    transition: "transform 0.3s ease, background 0.3s ease",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-    ":hover": {
-      transform: "scale(1.1)",
-      background: "#00a0dc",
-    }
-  },
-  cardInfo: {
-    padding: "1.5rem",
-    textAlign: "center",
-    background: "linear-gradient(to bottom, #111, #080808)",
-  },
-  cardName: {
-    margin: 0,
-    fontSize: "1.2rem",
-    fontWeight: 500,
-    color: "#fff",
-    letterSpacing: "0.5px",
-  },
-};

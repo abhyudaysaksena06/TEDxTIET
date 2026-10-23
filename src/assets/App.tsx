@@ -26,9 +26,12 @@ import useStageRect from './hooks/useStageRect';
 import useIsPhone from './hooks/useIsPhone';
 const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
 
-/** Ported pages sit under the fixed navbar, so they need clearance at the top. */
+/**
+ * Ported pages sit under the fixed navbar AND under the page title that now
+ * hangs below it, so the clearance has to cover both.
+ */
 function PageShell({ children }: { children: React.ReactNode }) {
-    return <div className="min-h-screen bg-black pt-20">{children}</div>;
+    return <div className="min-h-screen bg-black pt-[clamp(8rem,18vw,11rem)]">{children}</div>;
 }
 
 // how long the preloader animation needs to play out before it can be dismissed
