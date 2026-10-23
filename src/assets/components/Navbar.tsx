@@ -4,19 +4,26 @@ import { Link, useLocation } from "react-router-dom";
 /**
  * Navigation.
  *
- * The site's whole identity is the stage: a curved screen, a red circle, a
- * reel of past talks. The menu borrows that language — the house goes red,
- * and each destination is a cue line you can read at a glance.
+ * The opening is two paired moves, both of them things the site already does
+ * elsewhere. Five red columns sweep DOWN the screen on a stagger — the
+ * original menu entrance, and the same column rhythm as the stage lighting —
+ * and once they have covered the page each destination rises UP out of a
+ * clipped line, the way the footer wordmark reveals. Vertical sweep, then
+ * horizontal settle.
  *
- * Two things the previous version got wrong. It numbered the destinations
- * 01–05, which encoded nothing (a menu is not a sequence), and it laid the
- * panel out with centred stacks and fixed padding, which collided with itself
- * above 768px. Here every destination is a full-width ruled row, so the layout
- * cannot overlap at any width, and the mono line carries something true about
- * what is on the other side instead of an index.
+ * Both are plain CSS transitions on transform, never Framer animated props:
+ * Framer skips animated properties outright under prefers-reduced-motion,
+ * which previously left this panel see-through. A collapsed CSS transition
+ * just arrives instantly, which is the correct degradation.
  */
 
 const RED = "#eb0028";
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/** the columns are clear of the screen by here, so the links can start */
+const BARS_MS = 420;
+const BAR_STAGGER = 45;
+const LINKS_START = BARS_MS + 60;
 
 interface Destination {
     title: string;
@@ -148,7 +155,7 @@ export default function Navbar() {
                 <Link
                     to="/"
                     aria-label="TEDxTIET home"
-                    className="relative z-[2] text-2xl font-bold tracking-tighter transition-opacity hover:opacity-80"
+                    className="relative z-[2] text-2xl font-bold tracking-tighter transition-colors duration-300 hover:opacity-80"
                     style={{ color: isOpen ? "#000" : RED }}
                 >
                     TEDxTIET
@@ -166,12 +173,9 @@ export default function Navbar() {
                     onClick={() => setIsOpen((v) => !v)}
                     aria-label={isOpen ? "Close menu" : "Open menu"}
                     aria-expanded={isOpen}
+                    aria-controls="site-menu"
                     className="group relative z-[2] -mr-2 flex h-11 w-11 cursor-pointer flex-col items-end justify-center gap-[6px] bg-transparent p-0"
                 >
-                    {/* widths are CSS, not animated props: Framer skips animated
-                        properties entirely under prefers-reduced-motion, which
-                        once collapsed these bars to 0px and made the control
-                        invisible */}
                     <span
                         className={`block h-[2px] origin-center transition-all duration-300 ${
                             isOpen
@@ -196,112 +200,155 @@ export default function Navbar() {
                 role="dialog"
                 aria-modal="true"
                 aria-label="Site menu"
-                className={`fixed inset-0 z-[9998] flex flex-col transition-[clip-path,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-                }`}
+                className={`fixed inset-0 z-[9998] ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`}
                 style={{
-                    backgroundColor: RED,
-                    // the house coming down from the bar, in one move
-                    clipPath: isOpen ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)",
+                    // hidden (and so out of the tab order) once the exit has
+                    // played — the links must not be focusable behind a closed menu
+                    visibility: isOpen ? "visible" : "hidden",
+                    // The ground is the five bars, which are siblings of the
+                    // content rather than ancestors — so if they ever failed to
+                    // paint, black type would sit on a black page. The panel
+                    // takes the same red as its own background, but only AFTER
+                    // the bars have finished sweeping (and loses it instantly on
+                    // close), so the entrance still reads as five columns rather
+                    // than a flat fill appearing at once.
+                    backgroundColor: isOpen ? RED : "transparent",
+                    transition: [
+                        `visibility 0s linear ${isOpen ? "0s" : `${BARS_MS + BAR_STAGGER * 4}ms`}`,
+                        `background-color 0s linear ${isOpen ? `${BARS_MS + BAR_STAGGER * 4}ms` : "0s"}`,
+                    ].join(", "),
                 }}
             >
-                {/* clears the fixed bar */}
-                <div aria-hidden="true" className="h-[84px] shrink-0" />
+                {/* five columns sweeping down, reversing on the way out */}
+                <div aria-hidden="true" className="absolute inset-0 flex">
+                    {Array.from({ length: 5 }, (_, i) => (
+                        <span
+                            key={i}
+                            className="flex-1 origin-top"
+                            style={{
+                                backgroundColor: RED,
+                                transform: `scaleY(${isOpen ? 1 : 0})`,
+                                transition: `transform ${BARS_MS}ms ${EASE} ${
+                                    (isOpen ? i : 4 - i) * BAR_STAGGER
+                                }ms`,
+                            }}
+                        />
+                    ))}
+                </div>
 
-                <nav aria-label="Pages" className="flex flex-1 flex-col justify-center overflow-y-auto">
-                    <ul className="list-none border-t border-black/20">
-                        {DESTINATIONS.map((d, i) => {
-                            const isCurrent = d.href === currentPath;
-                            return (
-                                <li key={d.href} className="border-b border-black/20">
-                                    <Link
-                                        to={d.href}
-                                        onClick={() => setIsOpen(false)}
-                                        aria-current={isCurrent ? "page" : undefined}
-                                        className="group relative flex items-center justify-between gap-5 overflow-hidden px-5 py-3 sm:px-8 md:px-12 md:py-4"
-                                        style={{
-                                            opacity: isOpen ? 1 : 0,
-                                            transform: `translateY(${isOpen ? 0 : 14}px)`,
-                                            transition: `opacity 420ms ease ${180 + i * 60}ms, transform 420ms cubic-bezier(0.22,1,0.36,1) ${180 + i * 60}ms`,
-                                        }}
-                                    >
-                                        {/* the row fills with the opposite ground,
-                                            the same wipe the footer uses */}
-                                        <span
-                                            aria-hidden="true"
-                                            className="pointer-events-none absolute inset-0 origin-left scale-x-0 bg-black transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
-                                        />
+                <div className="relative flex h-full flex-col">
+                    {/* clears the fixed bar */}
+                    <div aria-hidden="true" className="h-[84px] shrink-0" />
 
-                                        <span className="relative flex min-w-0 items-baseline gap-4">
+                    <nav
+                        aria-label="Pages"
+                        className="flex flex-1 flex-col justify-center overflow-y-auto"
+                    >
+                        <ul className="list-none border-t border-black/20">
+                            {DESTINATIONS.map((d, i) => {
+                                const isCurrent = d.href === currentPath;
+                                return (
+                                    <li key={d.href} className="border-b border-black/20">
+                                        <Link
+                                            to={d.href}
+                                            onClick={() => setIsOpen(false)}
+                                            aria-current={isCurrent ? "page" : undefined}
+                                            className="group relative block overflow-hidden px-5 py-3 sm:px-8 md:px-12 md:py-4"
+                                        >
+                                            {/* the row fills with the opposite
+                                                ground, the wipe the footer uses */}
                                             <span
-                                                className="font-['Anton'] uppercase leading-[0.95] text-white"
-                                                style={{ fontSize: "clamp(2rem, 7vw, 4.25rem)" }}
-                                            >
-                                                {d.title}
-                                            </span>
-                                            {isCurrent && (
-                                                <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-black group-hover:text-white/70 sm:inline">
-                                                    you are here
+                                                aria-hidden="true"
+                                                className="pointer-events-none absolute inset-0 origin-left scale-x-0 bg-black transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                                            />
+
+                                            {/* …and each line rises out of its own
+                                                clipped box once the columns land */}
+                                            <span className="relative block overflow-hidden">
+                                                <span
+                                                    className="flex items-center justify-between gap-5"
+                                                    style={{
+                                                        transform: `translateY(${isOpen ? "0%" : "110%"})`,
+                                                        transition: `transform 620ms ${EASE} ${
+                                                            isOpen ? LINKS_START + i * 70 : 0
+                                                        }ms`,
+                                                    }}
+                                                >
+                                                    <span className="flex min-w-0 items-baseline gap-4">
+                                                        <span
+                                                            className="font-['Anton'] uppercase leading-[0.95] text-white"
+                                                            style={{
+                                                                fontSize: "clamp(2rem, 7vw, 4.25rem)",
+                                                            }}
+                                                        >
+                                                            {d.title}
+                                                        </span>
+                                                        {isCurrent && (
+                                                            <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-black group-hover:text-white/75 sm:inline">
+                                                                you are here
+                                                            </span>
+                                                        )}
+                                                    </span>
+
+                                                    <span className="shrink-0 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-black transition-colors duration-300 group-hover:text-white/75 sm:text-[11px]">
+                                                        {d.detail}
+                                                    </span>
                                                 </span>
-                                            )}
-                                        </span>
-
-                                        <span className="relative shrink-0 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-black transition-colors duration-300 group-hover:text-white/75 sm:text-[11px]">
-                                            {d.detail}
-                                        </span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-
-                {/* ---- foot ---- */}
-                <div
-                    className="shrink-0 border-t border-black/20 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-8 md:px-12"
-                    style={{
-                        opacity: isOpen ? 1 : 0,
-                        transition: "opacity 400ms ease 480ms",
-                    }}
-                >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                            <Link
-                                to="/register"
-                                onClick={() => setIsOpen(false)}
-                                className="inline-flex items-center gap-2 bg-black px-3 py-2 font-['Anton'] text-sm uppercase tracking-[0.06em] text-white transition-opacity duration-300 hover:opacity-85"
-                            >
-                                Register
-                            </Link>
-                            <Link
-                                to="/contact"
-                                onClick={() => setIsOpen(false)}
-                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
-                            >
-                                Contact
-                            </Link>
-                            <a
-                                href="mailto:tedxtiet@thapar.edu"
-                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
-                            >
-                                tedxtiet@thapar.edu
-                            </a>
-                        </div>
-
-                        <ul className="flex list-none flex-wrap gap-x-5 gap-y-1">
-                            {SOCIALS.map((s) => (
-                                <li key={s.label}>
-                                    <a
-                                        href={s.href}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-block py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition-colors duration-300 hover:text-white"
-                                    >
-                                        {s.label}
-                                    </a>
-                                </li>
-                            ))}
+                                            </span>
+                                        </Link>
+                                    </li>
+                                );
+                            })}
                         </ul>
+                    </nav>
+
+                    {/* ---- foot ---- */}
+                    <div
+                        className="shrink-0 border-t border-black/20 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-8 md:px-12"
+                        style={{
+                            opacity: isOpen ? 1 : 0,
+                            transition: `opacity 400ms ease ${isOpen ? LINKS_START + 300 : 0}ms`,
+                        }}
+                    >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                                <Link
+                                    to="/register"
+                                    onClick={() => setIsOpen(false)}
+                                    className="inline-flex items-center gap-2 bg-black px-3 py-2 font-['Anton'] text-sm uppercase tracking-[0.06em] text-white transition-opacity duration-300 hover:opacity-85"
+                                >
+                                    Register
+                                </Link>
+                                <Link
+                                    to="/contact"
+                                    onClick={() => setIsOpen(false)}
+                                    className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
+                                >
+                                    Contact
+                                </Link>
+                                <a
+                                    href="mailto:tedxtiet@thapar.edu"
+                                    className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
+                                >
+                                    tedxtiet@thapar.edu
+                                </a>
+                            </div>
+
+                            <ul className="flex list-none flex-wrap gap-x-5 gap-y-1">
+                                {SOCIALS.map((s) => (
+                                    <li key={s.label}>
+                                        <a
+                                            href={s.href}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-block py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition-colors duration-300 hover:text-white"
+                                        >
+                                            {s.label}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
