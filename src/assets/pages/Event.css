@@ -1,8 +1,10 @@
-body {
-  margin: 0;
-  padding: 0;
+/* Scoped to the page container. This styled `body` globally, and because the
+   Event page is a lazy chunk, opening /event once replaced the site's black
+   background with #373739 and its Anton body font with sans-serif on EVERY
+   route for the rest of the session. Margin/padding are already zeroed by
+   Tailwind's preflight. */
+.event-container-main {
   background-color: #373739;
-  font-family: sans-serif;
 }
 
 /* === Event Details Section === */

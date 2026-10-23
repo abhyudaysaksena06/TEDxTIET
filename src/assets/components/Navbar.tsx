@@ -240,13 +240,13 @@ export default function Navbar() {
                                                 {d.title}
                                             </span>
                                             {isCurrent && (
-                                                <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-black/70 group-hover:text-white/70 sm:inline">
+                                                <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-black group-hover:text-white/70 sm:inline">
                                                     you are here
                                                 </span>
                                             )}
                                         </span>
 
-                                        <span className="relative shrink-0 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-black/65 transition-colors duration-300 group-hover:text-white/75 sm:text-[11px]">
+                                        <span className="relative shrink-0 text-right font-mono text-[10px] uppercase tracking-[0.18em] text-black transition-colors duration-300 group-hover:text-white/75 sm:text-[11px]">
                                             {d.detail}
                                         </span>
                                     </Link>
@@ -276,13 +276,13 @@ export default function Navbar() {
                             <Link
                                 to="/contact"
                                 onClick={() => setIsOpen(false)}
-                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black/70 transition-colors duration-300 hover:text-white"
+                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
                             >
                                 Contact
                             </Link>
                             <a
                                 href="mailto:tedxtiet@thapar.edu"
-                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black/70 transition-colors duration-300 hover:text-white"
+                                className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
                             >
                                 tedxtiet@thapar.edu
                             </a>
@@ -295,7 +295,7 @@ export default function Navbar() {
                                         href={s.href}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="inline-block py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-black/70 transition-colors duration-300 hover:text-white"
+                                        className="inline-block py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-black transition-colors duration-300 hover:text-white"
                                     >
                                         {s.label}
                                     </a>

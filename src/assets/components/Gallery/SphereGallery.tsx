@@ -709,7 +709,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 />
 
                 {/* ---- HUD ---- */}
-                <div className="pointer-events-none absolute inset-x-0 top-20 flex justify-between px-5 font-mono text-[10px] uppercase tracking-[0.28em] text-white/45 md:px-8">
+                <div className="pointer-events-none absolute inset-x-0 top-20 flex justify-between px-5 font-mono text-[10px] uppercase tracking-[0.28em] text-white/55 md:px-8">
                     <span>TEDxTIET · Patiala</span>
                     <span className="hidden sm:inline">35 frames</span>
                 </div>

@@ -126,7 +126,7 @@ const ExecutiveBoardItem = ({ name, role, image, side }) => {
             </div>
           )}
         </div>
-        <span className="font-body text-xs uppercase tracking-widest mt-2 text-zinc-500 group-hover:text-[#eb0028] transition-colors z-10">{role}</span>
+        <span className="font-body text-xs uppercase tracking-widest mt-2 text-zinc-400 group-hover:text-[#eb0028] transition-colors z-10">{role}</span>
       </div>
     </div>
   );
