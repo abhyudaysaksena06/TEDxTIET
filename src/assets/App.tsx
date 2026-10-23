@@ -230,12 +230,35 @@ function HomePage() {
                                     className="pointer-events-none absolute z-20 text-right font-mono uppercase leading-snug"
                                     style={{
                                         right: '12%',
-                                        bottom: '38%',
+                                        // Rides the screen outline's lower
+                                        // edge, which is the red line behind it.
+                                        // Both numbers come from BOTTOM in
+                                        // ScreenOutline.tsx rather than a fresh
+                                        // reading of the photo, so the text
+                                        // follows the drawn line exactly and
+                                        // moves with it if those points change:
+                                        // BOTTOM passes 35.8% up from the foot
+                                        // of the stage under this text's right
+                                        // edge. The clearance is in em so it
+                                        // stays tied to the type, which is
+                                        // clamped in px, not to the stage.
+                                        bottom: 'calc(35.8% + 1.1em)',
                                         maxWidth: '38%',
                                         fontSize: 'clamp(5.5px, 0.58vw, 8.5px)',
                                         letterSpacing: '0.16em',
                                         color: 'rgba(255,255,255,0.42)',
                                         textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+                                        // BOTTOM falls 2.66deg across the span
+                                        // this line of text occupies. Pivot on
+                                        // the right edge, so the text stays put
+                                        // where it already sits and the far end
+                                        // lifts to follow the line instead of
+                                        // converging into it. Anchoring the
+                                        // bottom also means a second line, which
+                                        // is what phones get, stacks upward and
+                                        // leaves the lower edge riding the line.
+                                        transform: 'rotate(2.66deg)',
+                                        transformOrigin: '100% 100%',
                                         opacity: archiveOpen ? 0 : 1,
                                         transition: 'opacity 500ms ease',
                                     }}

@@ -6,12 +6,13 @@
  * lifts — otherwise they pop in mid-scroll.
  *
  * Stage 2 (everything else) starts the moment the home page mounts, so the
- * gallery and team photos are already arriving while the user reads the hero.
- * It's held until then rather than run up front because those are ~25MB and
- * would otherwise compete with the hero for bandwidth.
+ * gallery photos are already arriving while the user reads the hero. It's
+ * held until then rather than run up front so it doesn't compete with the
+ * hero for bandwidth.
  */
 
 import { filmFramesData } from "../components/Reel/filmData";
+import { IMAGE_COUNT } from "../components/Gallery/galleryPhotos";
 
 /** Shown immediately: hero background + the speaker frames in the reel. */
 export const HERO_MEDIA: string[] = [
@@ -19,9 +20,16 @@ export const HERO_MEDIA: string[] = [
     ...(filmFramesData as { image: string }[]).map((f) => f.image),
 ];
 
-/** Only needed once the user navigates to /gallery or /team. */
+/**
+ * Only needed once the user navigates to /gallery.
+ *
+ * The tile tier only — around 2MB for all 114, less than the 35 full-size
+ * files this used to pull. A focused tile fetches its own full-size map, and
+ * preloading those would be ~11MB spent on photographs most visitors never
+ * open.
+ */
 export const DEFERRED_MEDIA: string[] = [
-    ...Array.from({ length: 35 }, (_, i) => `/Gallery/img${i + 1}.webp`),
+    ...Array.from({ length: IMAGE_COUNT }, (_, i) => `/Gallery/thumb/img${i + 1}.webp`),
 ];
 
 function loadImage(src: string): Promise<void> {

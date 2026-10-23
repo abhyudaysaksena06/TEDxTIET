@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import useIsPhone from "../../hooks/useIsPhone";
+import { PHOTO_ASPECTS, IMAGE_COUNT } from "./galleryPhotos";
 
 /**
  * SphereGallery — photographs you can spin, focus and read.
@@ -24,9 +25,14 @@ import useIsPhone from "../../hooks/useIsPhone";
  * slerp, where x/y Euler angles would gimbal-lock near the poles.
  */
 
-const IMAGE_COUNT = 35;
-/** every photo gets a twin slot, reserved as a placeholder for new media */
-const SLOT_COUNT = IMAGE_COUNT * 2;
+/**
+ * One slot per photograph.
+ *
+ * Half the slots used to be placeholders held back for new media. The archive
+ * that was being held back for has arrived — 114 photographs — so every slot
+ * now carries one.
+ */
+const SLOT_COUNT = IMAGE_COUNT;
 const RED = new THREE.Color("#eb0028");
 const FRONT = new THREE.Vector3(0, 0, 1); // toward the camera
 const UP = new THREE.Vector3(0, 1, 0);
@@ -62,42 +68,6 @@ function cylinderPoints(count: number, radius: number, rows: number, rowGap: num
     return points;
 }
 
-/** Dark panel with a dashed red frame — the "awaiting new media" slot. */
-function makePlaceholderTexture() {
-    const c = document.createElement("canvas");
-    c.width = 512;
-    c.height = 346;
-    const g = c.getContext("2d")!;
-
-    g.fillStyle = "#0c0c0c";
-    g.fillRect(0, 0, c.width, c.height);
-
-    g.strokeStyle = "rgba(235,0,40,0.5)";
-    g.lineWidth = 6;
-    g.setLineDash([20, 16]);
-    g.strokeRect(12, 12, c.width - 24, c.height - 24);
-
-    const cx = c.width / 2;
-    const cy = c.height / 2 - 16;
-    g.setLineDash([]);
-    g.strokeStyle = "rgba(235,0,40,0.85)";
-    g.lineWidth = 9;
-    g.beginPath();
-    g.moveTo(cx - 30, cy);
-    g.lineTo(cx + 30, cy);
-    g.moveTo(cx, cy - 30);
-    g.lineTo(cx, cy + 30);
-    g.stroke();
-
-    g.fillStyle = "rgba(255,255,255,0.55)";
-    g.font = "bold 28px ui-monospace, monospace";
-    g.textAlign = "center";
-    g.fillText("NEW MEDIA", cx, cy + 76);
-
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-}
 
 interface Link {
     line: THREE.Line;
@@ -136,7 +106,10 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         // ---------- layout constants, per form ----------
         const CYL = isPhone;
         const RADIUS = CYL ? 4.2 : 6.4;
-        const TILE = CYL ? 0.78 : 0.92; // half-width of a photo plane
+        // Half-width of a photo plane, before it is reshaped to its photo.
+        // Trimmed when the archive grew to 114 tiles: at the old size the
+        // tallest 9:16 frames overlapped their neighbours on both bodies.
+        const TILE = CYL ? 0.72 : 0.82;
         const CAM_FAR = CYL ? 11.5 : 15;
         const CAM_NEAR = CYL ? 6.4 : 8.6;
 
@@ -202,15 +175,36 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         scene.add(dust);
         disposables.push(dustGeo, dustMat);
         const positions = CYL
-            ? cylinderPoints(SLOT_COUNT, RADIUS, 5, TILE * 1.9)
+            ? cylinderPoints(SLOT_COUNT, RADIUS, 8, TILE * 2.3)
             : fibonacciSphere(SLOT_COUNT, RADIUS);
         const tiles: THREE.Mesh[] = [];
 
         // ---------- photo tiles ----------
         const loader = new THREE.TextureLoader();
-        const tileGeo = new THREE.PlaneGeometry(TILE * 2, TILE * 1.35);
-        const placeholderTex = makePlaceholderTexture();
-        disposables.push(tileGeo, placeholderTex);
+        const maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+        /**
+         * A plane shaped like the photo it will carry, at a constant area.
+         *
+         * One shared landscape plane stretched every portrait frame to fit,
+         * and a third of this archive is portrait. Constant area rather than
+         * constant height, so an upright frame and a wide one take the same
+         * share of the body and the tiles stay evenly spread. Shapes bucket to
+         * 2%, so 114 tiles share a couple of dozen geometries.
+         */
+        const geoCache = new Map<number, THREE.PlaneGeometry>();
+        const TILE_AREA = TILE * 2 * (TILE * 1.35);
+        const tileGeoFor = (aspect: number) => {
+            const key = Math.round(aspect * 50) / 50;
+            let geo = geoCache.get(key);
+            if (!geo) {
+                const w = Math.sqrt(TILE_AREA * key);
+                geo = new THREE.PlaneGeometry(w, TILE_AREA / w);
+                geoCache.set(key, geo);
+                disposables.push(geo);
+            }
+            return geo;
+        };
 
         /**
          * Resting orientation: face pointing radially outward, upright.
@@ -229,17 +223,17 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         };
 
         positions.forEach((pos, i) => {
-            const isPlaceholder = i % 2 === 1;
-            const photoIndex = Math.floor(i / 2) + 1;
+            const photoIndex = i + 1;
 
             const mat = new THREE.MeshBasicMaterial({
-                color: isPlaceholder ? 0xffffff : 0x8a8a8a,
-                map: isPlaceholder ? placeholderTex : null,
+                color: 0x8a8a8a,
+                map: null,
                 transparent: true,
                 opacity: 0,
                 side: THREE.DoubleSide,
             });
-            const mesh = new THREE.Mesh(tileGeo, mat);
+            const mesh = new THREE.Mesh(tileGeoFor(PHOTO_ASPECTS[i] ?? 1.48), mat);
+            mesh.userData.photoIndex = photoIndex;
             mesh.position.copy(pos);
 
             // On the cylinder "outward" ignores Y (out from the vertical axis);
@@ -254,12 +248,16 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             tiles.push(mesh);
             disposables.push(mat);
 
-            if (isPlaceholder) return;
-
+            // Every tile holds a texture at once, so these are the small
+            // tier. At full size 114 maps would cost roughly 350MB of GPU
+            // memory and shut phones out; the focused tile fetches its own
+            // full-size map, which is the only place the detail is visible.
             loader.load(
-                `/Gallery/img${photoIndex}.webp`,
+                `/Gallery/thumb/img${photoIndex}.webp`,
                 (tex) => {
                     tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.anisotropy = maxAniso;
+                    mesh.userData.thumbTex = tex;
                     mat.map = tex;
                     mat.color.set(0xffffff);
                     mat.needsUpdate = true;
@@ -335,9 +333,62 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         let panY = 0;
         let velPan = 0; // world units / second
 
+        /**
+         * The focused tile's full-size map.
+         *
+         * A focused tile fills much of the viewport — around 820px wide on a
+         * 1440px desktop, twice that on a retina screen — which is well past
+         * what the 512px tile map holds. Only one is ever resident: focusing
+         * another tile releases the last, so the detail costs one texture
+         * rather than 114.
+         */
+        let fullTex: THREE.Texture | null = null;
+        let fullTile: THREE.Mesh | null = null;
+
+        const releaseFull = () => {
+            if (fullTile) {
+                const mat = fullTile.material as THREE.MeshBasicMaterial;
+                const thumb = fullTile.userData.thumbTex as THREE.Texture | undefined;
+                if (thumb) {
+                    mat.map = thumb;
+                    mat.needsUpdate = true;
+                }
+            }
+            fullTex?.dispose();
+            fullTex = null;
+            fullTile = null;
+        };
+
+        const loadFull = (tile: THREE.Mesh) => {
+            if (fullTile === tile) return;
+            releaseFull();
+            fullTile = tile;
+            loader.load(
+                `/Gallery/full/img${tile.userData.photoIndex}.webp`,
+                (tex) => {
+                    // focus moved on while this was in flight
+                    if (fullTile !== tile) {
+                        tex.dispose();
+                        return;
+                    }
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.anisotropy = maxAniso;
+                    fullTex = tex;
+                    const mat = tile.material as THREE.MeshBasicMaterial;
+                    mat.map = tex;
+                    mat.needsUpdate = true;
+                },
+                undefined,
+                () => {
+                    /* no full-size file: the tile keeps the map it has */
+                }
+            );
+        };
+
         const focusTile = (tile: THREE.Mesh) => {
             focused = tile;
             aligning = true;
+            loadFull(tile);
 
             if (CYL) {
                 // one axis of freedom: swing the tile round to the front, and
@@ -370,6 +421,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
 
         const clearFocus = () => {
             focused = null;
+            releaseFull();
             aligning = false;
             targetLift = 0;
         };
@@ -677,6 +729,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             canvas.removeEventListener("pointermove", onPointerTrack);
             canvas.removeEventListener("pointerleave", onPointerLeave);
             links.forEach(killLink);
+            releaseFull();
             disposables.forEach((d) => d.dispose());
             renderer.dispose();
             if (canvas.parentNode === mount) mount.removeChild(canvas);
