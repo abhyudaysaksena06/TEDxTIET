@@ -127,10 +127,10 @@ export default function Speaker() {
                 >
                     <p>Want to propose a speaker?</p>
                     <a
-                        href="mailto:tedxtiet@thapar.edu"
+                        href="mailto:tedx@thapar.edu"
                         className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
                     >
-                        tedxtiet@thapar.edu
+                        tedx@thapar.edu
                         <span
                             aria-hidden="true"
                             className="transition-transform duration-300 group-hover:translate-x-1"

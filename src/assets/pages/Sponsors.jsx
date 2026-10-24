@@ -11,7 +11,7 @@ const RED = '#eb0028';
 const RULE = '#232323';
 const MUTED = '#8a8a8a';
 
-const PARTNER_MAIL = 'mailto:tedxtiet@thapar.edu?subject=Sponsoring%20TEDxTIET%202026';
+const PARTNER_MAIL = 'mailto:tedx@thapar.edu?subject=Sponsoring%20TEDxTIET%202026';
 
 export default function Sponsors() {
     return (
@@ -91,7 +91,7 @@ export default function Sponsors() {
                         href={PARTNER_MAIL}
                         className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
                     >
-                        tedxtiet@thapar.edu
+                        tedx@thapar.edu
                         <span
                             aria-hidden="true"
                             className="transition-transform duration-300 group-hover:translate-x-1"

@@ -22,7 +22,7 @@ const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 const CONFIGURED = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY);
 
-const INBOX = "tedxtiet@thapar.edu";
+const INBOX = "tedx@thapar.edu";
 const RED = "#eb0028";
 const RED_INK = "#ff3b52"; // the brand red is under 4.5:1 at this size
 

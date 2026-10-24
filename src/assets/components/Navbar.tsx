@@ -429,10 +429,10 @@ export default function Navbar() {
                                             Contact
                                         </Link>
                                         <a
-                                            href="mailto:tedxtiet@thapar.edu"
+                                            href="mailto:tedx@thapar.edu"
                                             className="py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-black transition-colors duration-300 hover:text-white"
                                         >
-                                            tedxtiet@thapar.edu
+                                            tedx@thapar.edu
                                         </a>
                                     </div>
 

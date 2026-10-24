@@ -29,7 +29,7 @@ const MUTED = "#8a8a8a";
 const BIG_LINKS = [
     { label: "Team", href: "/team", meta: "TEDxTIET" },
     { label: "Gallery", href: "/gallery", meta: "Moments from the stage" },
-    { label: "Contact", href: "/contact", meta: "tedxtiet@thapar.edu" },
+    { label: "Contact", href: "/contact", meta: "tedx@thapar.edu" },
 ];
 
 const SOCIALS = [
@@ -177,13 +177,13 @@ export default function Footer() {
                 <div className="flex flex-1 flex-col gap-6 md:col-span-5 md:justify-between">
                     {/* email rule sits first on desktop, last on mobile */}
                     <a
-                        href="mailto:tedxtiet@thapar.edu"
+                        href="mailto:tedx@thapar.edu"
                         className="group order-last flex w-full items-center justify-between gap-4 border-b pb-2 font-mono text-[11px] uppercase tracking-[0.2em] transition-colors duration-300 md:-order-1"
                         style={{ borderColor: RULE, color: MUTED }}
                     >
                         <span>Email</span>
                         <span className="flex min-w-0 items-center gap-2 truncate transition-colors duration-300 group-hover:text-[#ebe9e4]">
-                            tedxtiet@thapar.edu
+                            tedx@thapar.edu
                             <span
                                 aria-hidden="true"
                                 className="transition-transform duration-300 group-hover:translate-x-1"
