@@ -613,6 +613,33 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         let velX = 0; // radians / second
         let velY = 0;
 
+        /**
+         * Fingers currently down, for pinch-to-zoom. Two of them turn the
+         * gesture into a pinch; lifting back to one carries on as a drag from
+         * wherever that finger is, and never counts as a tap.
+         */
+        const touches = new Map<number, { x: number; y: number }>();
+        let pinchStartDist = 0;
+        let pinchStartZoom = 1;
+        let noTap = false;
+        const pinchDistance = () => {
+            const [a, b] = [...touches.values()];
+            return Math.hypot(a.x - b.x, a.y - b.y);
+        };
+
+        /**
+         * World units the body's front surface moves per screen pixel, at its
+         * own depth. A drag converted at this rate stays under the finger.
+         * Both cylinder gestures used to convert at the camera's distance
+         * instead, which ran them ahead of the finger: rows panned 1.6x as
+         * far as the swipe and a turn went 3.5x, overshooting several photos
+         * at a flick. Floored so it stays usable when zoomed inside the body.
+         */
+        const worldPerPx = () => {
+            const frontDist = Math.max(1.5, camera.position.z - RADIUS);
+            return (2 * frontDist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
+        };
+
         const canvas = renderer.domElement;
         canvas.style.cursor = "grab";
         canvas.style.touchAction = "none";
@@ -656,6 +683,23 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         }
 
         const onDown = (e: PointerEvent) => {
+            touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (touches.size >= 2) {
+                // a second finger: stop the drag where it is and pinch from
+                // the current zoom
+                try {
+                    canvas.setPointerCapture(e.pointerId);
+                } catch {
+                    /* not capturable */
+                }
+                dragging = false;
+                noTap = true;
+                pinchStartDist = pinchDistance();
+                pinchStartZoom = zoom;
+                velX = velY = velPan = 0;
+                return;
+            }
+            noTap = false;
             dragging = true;
             axis = null;
             lastX = downX = e.clientX;
@@ -673,6 +717,18 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         };
 
         const onMove = (e: PointerEvent) => {
+            if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (touches.size >= 2) {
+                // fingers apart brings the camera in, together sends it back
+                const d = pinchDistance();
+                if (pinchStartDist > 0 && d > 0) {
+                    zoom = Math.min(
+                        ZOOM_MAX,
+                        Math.max(ZOOM_MIN, pinchStartZoom * (pinchStartDist / d))
+                    );
+                }
+                return;
+            }
             if (!dragging) return;
             const now = performance.now();
             const dt = Math.max(1, now - lastMoveT) / 1000;
@@ -694,7 +750,8 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             const useX = axis !== "y";
             const useY = axis !== "x";
 
-            const ry = useX ? dx * SENS : 0;
+            // the cylinder turns so its front surface stays under the finger
+            const ry = useX ? (CYL ? (dx * worldPerPx()) / RADIUS : dx * SENS) : 0;
             const rx = !CYL && useY ? dy * SENS : 0; // a cylinder must not tip; it pans
             applySpin(rx, ry);
 
@@ -702,11 +759,12 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             velX = rx / dt;
 
             if (CYL && useY) {
-                // px -> world units at the body's depth, so the rows track the
-                // finger exactly rather than at some arbitrary rate
-                const visibleH = 2 * camera.position.z * Math.tan((45 / 2) * (Math.PI / 180));
-                const dWorld = (dy / height) * visibleH;
-                const next = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panY + dWorld));
+                // Rows follow the finger: swipe up and the body goes up. Screen
+                // y grows downward and world y upward, so the pixel delta is
+                // subtracted. It was added, which ran the body against the
+                // swipe.
+                const dWorld = dy * worldPerPx();
+                const next = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panY - dWorld));
                 velPan = (next - panY) / dt;
                 panY = next;
             }
@@ -717,15 +775,35 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
         };
 
         const onUp = (e: PointerEvent) => {
-            if (!dragging) return;
-            dragging = false;
-            canvas.style.cursor = "grab";
+            const wasPinch = touches.size >= 2;
+            touches.delete(e.pointerId);
             try {
                 canvas.releasePointerCapture(e.pointerId);
             } catch {
                 /* never captured */
             }
+            if (wasPinch) {
+                // down to one finger: carry on as a drag from where it is
+                const rest = touches.values().next().value;
+                if (rest) {
+                    dragging = true;
+                    axis = null;
+                    lastX = downX = rest.x;
+                    lastY = downY = rest.y;
+                    moved = 0;
+                    lastMoveT = performance.now();
+                }
+                return;
+            }
+            if (!dragging) return;
+            dragging = false;
+            canvas.style.cursor = "grab";
 
+            // the last finger of a pinch is never a tap
+            if (noTap && moved < 6) {
+                velX = velY = velPan = 0;
+                return;
+            }
             // a press that barely moved is a click, not a throw
             if (moved < 6) {
                 velX = velY = 0;
@@ -734,8 +812,9 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 else clearFocus();
                 return;
             }
-            // finger paused before lifting: release, do not fling
-            if (performance.now() - lastMoveT > 90) velX = velY = 0;
+            // finger paused before lifting: release, do not fling — the
+            // vertical pan too, which used to slide on after a careful drag
+            if (performance.now() - lastMoveT > 90) velX = velY = velPan = 0;
         };
 
         canvas.addEventListener("pointerdown", onDown);
@@ -991,7 +1070,9 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
                 </div>
 
                 <p className="pointer-events-none absolute inset-x-0 bottom-6 px-5 text-center font-mono text-[11px] tracking-[0.3em] uppercase text-white/60">
-                    Drag to spin · Scroll to zoom · Tap a frame
+                    {isPhone
+                        ? "Swipe to turn · Pinch to zoom · Tap a frame"
+                        : "Drag to spin · Scroll to zoom · Tap a frame"}
                 </p>
             </div>
         );

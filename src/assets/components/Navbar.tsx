@@ -32,6 +32,7 @@ const DESTINATIONS: Destination[] = [
     { title: "Team", href: "/team", detail: `${TEAM_COUNT} students` },
     // the page leads with the 2026 line-up, which is not announced yet
     { title: "Speakers", href: "/speakers", detail: "2026 line-up soon" },
+    { title: "Sponsors", href: "/sponsors", detail: "Coming soon" },
     { title: "Alumni", href: "/alumni", detail: "Past organisers" },
 ];
 
@@ -54,6 +55,7 @@ const PAGE_TITLES: Record<string, string> = {
     "/gallery": "Gallery",
     "/team": "Team",
     "/speakers": "Speakers",
+    "/sponsors": "Sponsors",
     "/alumni": "Alumni",
     "/event": "Events",
     "/contact": "Contact",
@@ -235,9 +237,15 @@ export default function Navbar() {
                             {pageTitle}
                         </span>
 
-                        {/* at the top: the masthead */}
+                        {/* At the top: the masthead. On a desktop it sits
+                            centred in the bar, between the logo and the menu.
+                            A phone's bar has no room for it there, so it used
+                            to drop below as a small centred label, floating
+                            off the left edge that the logo, the menu and every
+                            page's content share. On phones it is now the
+                            page's heading: on that edge, at heading size. */}
                         <div
-                            className="pointer-events-none absolute inset-x-0 top-full -mt-2 flex justify-center px-5"
+                            className="pointer-events-none absolute inset-x-0 top-full -mt-2 flex justify-start px-5 sm:justify-center"
                             style={{
                                 opacity: atTop ? 1 : 0,
                                 transform: atTop ? "translateY(0)" : "translateY(-45%)",
@@ -247,9 +255,8 @@ export default function Navbar() {
                         >
                             <span className="relative block">
                                 <span
-                                    className="block font-['Anton'] uppercase leading-[0.85] text-white"
+                                    className="block font-['Anton'] text-[2.6rem] uppercase leading-[0.85] text-white sm:text-[clamp(1.75rem,6vw,3.75rem)]"
                                     style={{
-                                        fontSize: "clamp(1.75rem, 6vw, 3.75rem)",
                                         letterSpacing: "0.02em",
                                         // the stage pages run bright under it
                                         textShadow: "0 2px 18px rgba(0,0,0,0.65)",
@@ -262,10 +269,20 @@ export default function Navbar() {
                                     label sitting in a box */}
                                 <span
                                     aria-hidden="true"
-                                    className="absolute -inset-x-3 -bottom-2 block h-[3px]"
+                                    className="absolute -inset-x-3 -bottom-2 hidden h-[3px] sm:block"
                                     style={{
                                         background:
                                             "linear-gradient(to right, transparent, #eb0028 20%, #eb0028 80%, transparent)",
+                                    }}
+                                />
+                                {/* on a phone the heading starts on the edge,
+                                    so the rule starts flush and trails off */}
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute -bottom-2 left-0 -right-10 block h-[3px] sm:hidden"
+                                    style={{
+                                        background:
+                                            "linear-gradient(to right, #eb0028, #eb0028 55%, transparent)",
                                     }}
                                 />
                             </span>

@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 // Traces the curved projection-screen border of HOME_BG.webp.
 //
 // These points are MEASURED FROM THE IMAGE, not eyeballed: the screen's neon
@@ -85,6 +87,97 @@ export default function ScreenOutline() {
                 strokeLinejoin="round"
                 strokeLinecap="round"
             />
+        </svg>
+    );
+}
+
+/**
+ * The photograph's own pixel size. The stage always carries this aspect, so
+ * anything set in this space scales evenly with the screen. The outline above
+ * can stretch a 0-100 box because a stroke does not care; text does.
+ */
+const IMG_W = 1375;
+const IMG_H = 768;
+
+/** BOTTOM from its left end to `xPct`, ending exactly there, in image pixels. */
+function bottomUpTo(xPct: number): [number, number][] {
+    const pts: [number, number][] = [];
+    for (let i = 0; i < BOTTOM.length; i++) {
+        const [x, y] = BOTTOM[i];
+        if (x <= xPct) {
+            pts.push([x, y]);
+            continue;
+        }
+        const [px, py] = BOTTOM[i - 1];
+        pts.push([xPct, py + ((xPct - px) / (x - px)) * (y - py)]);
+        break;
+    }
+    return pts.map(([x, y]) => [(x / 100) * IMG_W, (y / 100) * IMG_H]);
+}
+
+interface CaptionProps {
+    text: string;
+    /** where the caption ends, as a percentage across the stage */
+    endPct: number;
+    /** type size in screen pixels */
+    fontPx: number;
+    /** the stage's rendered width, to turn screen pixels into image pixels */
+    stageW: number;
+    hidden?: boolean;
+}
+
+/**
+ * A line of text set ON the screen's lower edge, following its curve.
+ *
+ * It was a paragraph rotated to the edge's average slope. That held on a
+ * desktop, where one line spans a short, nearly straight stretch, but on a
+ * phone the text wrapped to two lines and the upper one rode up into the
+ * logo. Set on a path built from the same BOTTOM points as the drawn line,
+ * it stays one line riding the edge at every width.
+ */
+export function OutlineCaption({ text, endPct, fontPx, stageW, hidden = false }: CaptionProps) {
+    const id = useId();
+    if (!stageW) return null;
+
+    const k = IMG_W / stageW; // image pixels per screen pixel
+    const size = fontPx * k;
+    // baseline this far above the line: the old 1.1em clearance plus the
+    // space between a capital's foot and its box
+    const lift = size * 1.3;
+    const d = smoothPath(bottomUpTo(endPct).map(([x, y]) => [x, y - lift]));
+
+    return (
+        <svg
+            aria-hidden={hidden}
+            className="pointer-events-none absolute inset-0 z-20 h-full w-full overflow-visible"
+            viewBox={`0 0 ${IMG_W} ${IMG_H}`}
+            style={{ opacity: hidden ? 0 : 1, transition: "opacity 500ms ease" }}
+        >
+            <defs>
+                <path id={`${id}-path`} d={d} />
+                {/* the soft dark halo that kept it legible over the photo */}
+                <filter id={`${id}-halo`} x="-5%" y="-100%" width="110%" height="300%">
+                    <feDropShadow
+                        dx="0"
+                        dy={k}
+                        stdDeviation={4 * k}
+                        floodColor="#000"
+                        floodOpacity="0.9"
+                    />
+                </filter>
+            </defs>
+            <text
+                className="font-mono"
+                fontSize={size}
+                letterSpacing={0.16 * size}
+                fill="rgba(255,255,255,0.42)"
+                textAnchor="end"
+                filter={`url(#${id}-halo)`}
+            >
+                <textPath href={`#${id}-path`} startOffset="100%">
+                    {text.toUpperCase()}
+                </textPath>
+            </text>
         </svg>
     );
 }

@@ -4,7 +4,7 @@ import RouteTitle from './components/RouteTitle';
 import { motion } from 'framer-motion';
 import Navbar from './components/Navbar';
 import ScrollLogo from './components/Stage/ScrollLogo';
-import ScreenOutline from './components/ScreenOutline';
+import ScreenOutline, { OutlineCaption } from './components/ScreenOutline';
 import ReelOnScreen from './components/Reel/ReelOnScreen';
 import CarpetFigure, { CARPET, FIGURE_H } from './components/Stage/CarpetFigure';
 import FigurePlacer, { type Placement } from './components/Stage/FigurePlacer';
@@ -15,6 +15,7 @@ import Footer from './components/Footer';
 const RegistrationPage = lazy(() => import('./components/Registration/RegistrationPage'));
 // Pages ported from TEDxTIET1/TEDxTIET26-27 (src/Components/*). Home stays ours.
 const SpeakersPage = lazy(() => import('./pages/Speaker'));
+const SponsorsPage = lazy(() => import('./pages/Sponsors'));
 const TeamPage = lazy(() => import('./pages/Team'));
 const AlumniPage = lazy(() => import('./pages/alumni'));
 const EventPage = lazy(() => import('./pages/Event'));
@@ -32,7 +33,9 @@ const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
  * hangs below it, so the clearance has to cover both.
  */
 function PageShell({ children }: { children: React.ReactNode }) {
-    return <div className="min-h-screen bg-black pt-[clamp(8rem,18vw,11rem)]">{children}</div>;
+    // phones carry the page title as a full heading under the bar, so the
+    // content starts lower there; from sm up this is the old clamp exactly
+    return <div className="min-h-screen bg-black pt-[10rem] sm:pt-[clamp(8rem,18vw,11rem)]">{children}</div>;
 }
 
 // how long the preloader animation needs to play out before it can be dismissed
@@ -89,6 +92,7 @@ export default function App() {
                 {/* the globe owns the whole viewport here — no shell, no page scroll */}
                 <Route path="/gallery" element={<SphereGallery fullPage />} />
                 <Route path="/speakers" element={<PageShell><SpeakersPage /></PageShell>} />
+                <Route path="/sponsors" element={<PageShell><SponsorsPage /></PageShell>} />
                 <Route path="/team" element={<PageShell><TeamPage /></PageShell>} />
                 <Route path="/alumni" element={<PageShell><AlumniPage /></PageShell>} />
                 <Route path="/event" element={<PageShell><EventPage /></PageShell>} />
@@ -223,50 +227,17 @@ function HomePage() {
 
                                 {/* Nothing on the page said the hero could be
                                     clicked, so the whole reel sequence was
-                                    undiscoverable. Sits inside the drawn screen
-                                    at its lower right, and clears out once the
-                                    archive is open — by then it has done its
-                                    job. */}
-                                <p
-                                    aria-hidden={archiveOpen}
-                                    className="pointer-events-none absolute z-20 text-right font-mono uppercase leading-snug"
-                                    style={{
-                                        right: '12%',
-                                        // Rides the screen outline's lower
-                                        // edge, which is the red line behind it.
-                                        // Both numbers come from BOTTOM in
-                                        // ScreenOutline.tsx rather than a fresh
-                                        // reading of the photo, so the text
-                                        // follows the drawn line exactly and
-                                        // moves with it if those points change:
-                                        // BOTTOM passes 35.8% up from the foot
-                                        // of the stage under this text's right
-                                        // edge. The clearance is in em so it
-                                        // stays tied to the type, which is
-                                        // clamped in px, not to the stage.
-                                        bottom: 'calc(35.8% + 1.1em)',
-                                        maxWidth: '38%',
-                                        fontSize: 'clamp(5.5px, 0.58vw, 8.5px)',
-                                        letterSpacing: '0.16em',
-                                        color: 'rgba(255,255,255,0.42)',
-                                        textShadow: '0 1px 8px rgba(0,0,0,0.9)',
-                                        // BOTTOM falls 2.66deg across the span
-                                        // this line of text occupies. Pivot on
-                                        // the right edge, so the text stays put
-                                        // where it already sits and the far end
-                                        // lifts to follow the line instead of
-                                        // converging into it. Anchoring the
-                                        // bottom also means a second line, which
-                                        // is what phones get, stacks upward and
-                                        // leaves the lower edge riding the line.
-                                        transform: 'rotate(2.66deg)',
-                                        transformOrigin: '100% 100%',
-                                        opacity: archiveOpen ? 0 : 1,
-                                        transition: 'opacity 500ms ease',
-                                    }}
-                                >
-                                    Click &amp; scroll to explore the archive of voices
-                                </p>
+                                    undiscoverable. Set along the screen's
+                                    lower edge, inside it at the right, and
+                                    gone once the archive is open — by then it
+                                    has done its job. "Tap" on a phone. */}
+                                <OutlineCaption
+                                    text={`${isPhone ? 'Tap' : 'Click'} & scroll to explore the archive of voices`}
+                                    endPct={88}
+                                    fontPx={Math.min(8.5, Math.max(5.5, window.innerWidth * 0.0058))}
+                                    stageW={stage.width}
+                                    hidden={archiveOpen}
+                                />
 
                                 <ScrollLogo
                                     scrollRootRef={scrollRootRef}
