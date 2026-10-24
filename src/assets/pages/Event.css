@@ -48,6 +48,19 @@
   color: #f5f5f5;
 }
 
+.event-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.event-info-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #ff0000;
+}
+
 .event-info strong {
   color: #ff0000;
 }
@@ -68,7 +81,9 @@
 }
 
 .register-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 3rem;
   background-color: #eb0028; /* white on #ff0000 is 4.0:1; the brand red clears AA at 4.6 */
   color: #fff;

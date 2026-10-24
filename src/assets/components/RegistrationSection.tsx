@@ -1,3 +1,5 @@
+import { ArrowRight } from "lucide-react";
+
 const REGISTRATION_URL = "/register";
 
 export default function RegistrationSection() {
@@ -29,7 +31,7 @@ export default function RegistrationSection() {
                     className="group mt-16 inline-flex items-center gap-3 rounded-full bg-[#eb0028] px-9 py-4 text-sm md:text-base font-bold uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#eb0028]"
                 >
                     Register Now
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </a>
             </div>
         </section>

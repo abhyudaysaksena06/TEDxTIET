@@ -8,6 +8,7 @@ import Image3 from '../gridimages/Image3.webp';
 import Image5 from '../gridimages/Image5.webp';
 import Image1 from '../gridimages/Image1.webp';
 import Image4 from '../gridimages/Image4.webp';
+import { ArrowRight, ArrowUpRight, Mail } from 'lucide-react';
 
 /**
  * Alumni.
@@ -88,13 +89,11 @@ function AlumniCard({ name, url, img, index }) {
           <p className="font-['Anton'] text-base uppercase leading-tight tracking-[0.02em] text-white transition-colors duration-300 group-hover:text-[#eb0028] md:text-lg">
             {name}
           </p>
-          <span
+          <ArrowUpRight
             aria-hidden="true"
-            className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+            className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             style={{ color: MUTED }}
-          >
-            in ↗
-          </span>
+          />
         </div>
       </a>
     </li>
@@ -154,13 +153,12 @@ export default function Alumni() {
             href="mailto:tedx@thapar.edu"
             className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
           >
+            <Mail aria-hidden="true" className="h-3.5 w-3.5" />
             tedx@thapar.edu
-            <span
+            <ArrowRight
               aria-hidden="true"
-              className="transition-transform duration-300 group-hover:translate-x-1"
-            >
-              →
-            </span>
+              className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
+            />
           </a>
         </div>
       </main>

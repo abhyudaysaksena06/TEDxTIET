@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowUp, ArrowUpRight, Mail, Ticket } from "lucide-react";
 
 /**
  * Footer — rebuilt to the structure of mrdev4u.com, measured from the live page:
@@ -181,15 +182,17 @@ export default function Footer() {
                         className="group order-last flex w-full items-center justify-between gap-4 border-b pb-2 font-mono text-[11px] uppercase tracking-[0.2em] transition-colors duration-300 md:-order-1"
                         style={{ borderColor: RULE, color: MUTED }}
                     >
-                        <span>Email</span>
+                        <span className="inline-flex items-center gap-2">
+                            <Mail aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            Email
+                        </span>
                         <span className="flex min-w-0 items-center gap-2 truncate transition-colors duration-300 group-hover:text-[#ebe9e4]">
                             tedx@thapar.edu
-                            <span
+                            <ArrowUpRight
                                 aria-hidden="true"
-                                className="transition-transform duration-300 group-hover:translate-x-1"
-                            >
-                                →
-                            </span>
+                                className="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+                                strokeWidth={1.5}
+                            />
                         </span>
                     </a>
 
@@ -211,12 +214,11 @@ export default function Footer() {
                                         style={{ color: "#a9a7a2" }}
                                     >
                                         {s.label}
-                                        <span
+                                        <ArrowUpRight
                                             aria-hidden="true"
-                                            className="font-mono text-[0.55em] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                                        >
-                                            ↗
-                                        </span>
+                                            className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                                            strokeWidth={1.5}
+                                        />
                                     </a>
                                 </li>
                             ))}
@@ -231,9 +233,7 @@ export default function Footer() {
                         // True black clears it at 4.56 and reads the same.
                         style={{ backgroundColor: "#eb0028", color: "#000000" }}
                     >
-                        <span aria-hidden="true" className="text-[0.7em]">
-                            ●
-                        </span>
+                        <Ticket aria-hidden="true" className="h-4 w-4" strokeWidth={1.75} />
                         Registrations open
                     </Link>
                 </div>
@@ -256,9 +256,10 @@ export default function Footer() {
                         minimum; the text alone was 15px tall */}
                     <a
                         href="#top"
-                        className="inline-block py-[5px] transition-colors duration-300 hover:text-[#ebe9e4]"
+                        className="inline-flex items-center gap-1 py-[5px] transition-colors duration-300 hover:text-[#ebe9e4]"
                     >
-                        Back to top ↑
+                        Back to top
+                        <ArrowUp aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </a>
                 </p>
             </div>

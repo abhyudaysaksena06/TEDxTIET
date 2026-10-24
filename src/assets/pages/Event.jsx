@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
 import "./Event.css";
 
 /** Registration is handled on Unstop for this edition. */
@@ -51,13 +52,16 @@ const Event = () => {
           <p className="event-tagline">Moments That Shape Us</p>
 
           <div className="event-info">
-            <p>
+            <p className="event-info-item">
+              <CalendarDays aria-hidden="true" className="event-info-icon" />
               <strong>Date:</strong> 23 April 2026
             </p>
-            <p>
+            <p className="event-info-item">
+              <Clock3 aria-hidden="true" className="event-info-icon" />
               <strong>Time:</strong> 2:30 PM
             </p>
-            <p>
+            <p className="event-info-item">
+              <MapPin aria-hidden="true" className="event-info-icon" />
               <strong>Venue:</strong> Main Auditorium
             </p>
           </div>
@@ -78,6 +82,7 @@ const Event = () => {
             rel="noopener noreferrer"
           >
             Register Now
+            <ArrowUpRight aria-hidden="true" className="ml-2 inline-block h-4 w-4 align-[-3px]" />
           </a>
         </div>
       </section>

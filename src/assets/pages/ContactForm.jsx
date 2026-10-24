@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, LoaderCircle, Mail } from "lucide-react";
 import "./queryform.css";
 
 /**
@@ -107,7 +108,17 @@ export default function ContactForm() {
                     </div>
 
                     <button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Sending..." : "Send"}
+                        {isSubmitting ? (
+                            <>
+                                Sending...
+                                <LoaderCircle aria-hidden="true" className="ml-2 inline-block h-4 w-4 animate-spin align-[-3px]" />
+                            </>
+                        ) : (
+                            <>
+                                Send
+                                <ArrowRight aria-hidden="true" className="ml-2 inline-block h-4 w-4 align-[-3px]" />
+                            </>
+                        )}
                     </button>
 
                     {/* announced to screen readers when it changes, rather than
@@ -127,6 +138,7 @@ export default function ContactForm() {
                     </p>
 
                     <p style={{ marginTop: "4px", fontSize: "0.72rem", color: "#9a9a9a" }}>
+                        <Mail aria-hidden="true" className="mr-1 inline-block h-3.5 w-3.5 align-[-3px]" />
                         Prefer email?{" "}
                         <a href={`mailto:${INBOX}`} style={{ color: RED_INK }}>
                             {INBOX}
@@ -156,18 +168,12 @@ export default function ContactForm() {
                 onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
                 onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
-                <svg width="50" height="50" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
-                    <circle cx="25" cy="25" r="24" fill={RED} />
-                    <path
-                        d="M29 16 L20 25 L29 34"
-                        fill="none"
-                        stroke="#fff"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                    <line x1="21" y1="25" x2="36" y2="25" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
-                </svg>
+                <span
+                    className="flex h-[50px] w-[50px] items-center justify-center rounded-full"
+                    style={{ backgroundColor: RED }}
+                >
+                    <ArrowLeft aria-hidden="true" className="h-6 w-6 text-white" strokeWidth={2.5} />
+                </span>
             </button>
         </div>
     );

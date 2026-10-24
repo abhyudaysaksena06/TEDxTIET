@@ -11,6 +11,7 @@
  */
 
 import { Link } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 
 const RED = '#eb0028';
 const RULE = '#232323';
@@ -74,7 +75,7 @@ export default function Speaker() {
                             style={{ backgroundColor: RED }}
                         >
                             Watch the Archive of Voices
-                            <span aria-hidden="true">→</span>
+                            <ArrowRight aria-hidden="true" className="h-4 w-4" />
                         </Link>
                         <p
                             className="font-mono text-[10px] uppercase tracking-[0.16em]"
@@ -131,12 +132,10 @@ export default function Speaker() {
                         className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
                     >
                         tedx@thapar.edu
-                        <span
+                        <ArrowUpRight
                             aria-hidden="true"
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                        >
-                            →
-                        </span>
+                            className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
+                        />
                     </a>
                 </div>
             </main>

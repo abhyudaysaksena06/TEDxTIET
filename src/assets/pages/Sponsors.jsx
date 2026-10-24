@@ -7,6 +7,8 @@
  * in from here. The page title is in the navbar, so the h1 is sr-only.
  */
 
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
+
 const RED = '#eb0028';
 const RULE = '#232323';
 const MUTED = '#8a8a8a';
@@ -70,7 +72,7 @@ export default function Sponsors() {
                             style={{ backgroundColor: RED }}
                         >
                             Become a partner
-                            <span aria-hidden="true">→</span>
+                            <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
                         </a>
                         <p
                             className="font-mono text-[10px] uppercase tracking-[0.16em]"
@@ -92,12 +94,10 @@ export default function Sponsors() {
                         className="group inline-flex items-center gap-2 py-[5px] transition-colors duration-300 hover:text-white"
                     >
                         tedx@thapar.edu
-                        <span
+                        <ArrowRight
                             aria-hidden="true"
-                            className="transition-transform duration-300 group-hover:translate-x-1"
-                        >
-                            →
-                        </span>
+                            className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1"
+                        />
                     </a>
                 </div>
             </main>

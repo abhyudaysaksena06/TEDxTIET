@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ArrowRight, BadgeCheck, LoaderCircle } from 'lucide-react';
 import './RegistrationPage.css';
 
 /**
@@ -102,6 +103,7 @@ export default function RegistrationPage() {
 
         {submitted ? (
           <div className="success">
+            <BadgeCheck aria-hidden="true" className="mb-3 inline-block h-10 w-10" />
             <h2>You&apos;re registered!</h2>
             <p>Thank you, {form.name}. A confirmation will be sent to {form.email}.</p>
           </div>
@@ -176,7 +178,11 @@ export default function RegistrationPage() {
 
             <button type="submit" className="submit" disabled={submitting}>
               {submitting ? 'REGISTERING…' : 'REGISTER & JOIN THE JOURNEY'}
-              <span aria-hidden="true">&rarr;</span>
+              {submitting ? (
+                <LoaderCircle aria-hidden="true" className="ml-2 inline-block h-4 w-4 animate-spin align-[-3px]" />
+              ) : (
+                <ArrowRight aria-hidden="true" className="ml-2 inline-block h-4 w-4 align-[-3px]" />
+              )}
             </button>
           </form>
         )}
