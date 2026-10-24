@@ -22,9 +22,8 @@ const AlumniPage = lazy(() => import('./pages/alumni'));
 const EventPage = lazy(() => import('./pages/Event'));
 const ContactPage = lazy(() => import('./pages/ContactForm'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
-import Reveal from './components/Reveal';
-import { preloadHeroMedia, startBackgroundMediaLoad } from './lib/preloadMedia';
-import useSmoothScroll, { jumpTo } from './hooks/useSmoothScroll';
+import { preloadAllMedia } from './lib/preloadMedia';
+import useSmoothScroll, { jumpTo, glideTo } from './hooks/useSmoothScroll';
 import useStageRect from './hooks/useStageRect';
 import useIsPhone from './hooks/useIsPhone';
 const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
@@ -51,8 +50,10 @@ function PageShell({ children, fit = false }: { children: React.ReactNode; fit?:
     return <div className={`min-h-screen bg-black ${clearance}`}>{children}</div>;
 }
 
-// how long the preloader animation needs to play out before it can be dismissed
-const PRELOADER_MIN_MS = 1600;
+// How long the preloader stays up, counted from when the page was opened:
+// the 1.6s its animation needs, plus 2s so more of the site's media is in
+// hand by the time the curtain lifts.
+const PRELOADER_MIN_MS = 1600 + 2000;
 
 export default function App() {
     // preloader from the source repo — shown once on first load
@@ -63,14 +64,19 @@ export default function App() {
     useEffect(() => {
         let cancelled = false;
 
-        // Hero media starts downloading with the preloader, not after it, so the
-        // background and reel portraits are cached before the curtain lifts.
-        // The curtain waits for whichever finishes LAST: the animation's minimum
-        // runtime, or the hero fetches (themselves capped, so a slow connection
-        // can't strand the user on the preloader).
-        const minDisplay = new Promise((resolve) => setTimeout(resolve, PRELOADER_MIN_MS));
+        // The preloader itself is in index.html, so it was on screen before
+        // this bundle even ran; here we only decide when it lifts. Every piece
+        // of media starts downloading now, in parallel, and the hairline under
+        // the word follows it. The curtain waits for whichever finishes LAST:
+        // the minimum time since the page opened, or the hero media (itself
+        // capped, so a slow connection can't strand anyone on the preloader).
+        const bar = document.querySelector<HTMLElement>('#preloader .pl-progress');
+        const media = preloadAllMedia((f) => bar?.style.setProperty('--p', String(f)));
+        const minDisplay = new Promise((resolve) =>
+            setTimeout(resolve, Math.max(0, PRELOADER_MIN_MS - performance.now()))
+        );
 
-        Promise.all([minDisplay, preloadHeroMedia()]).then(() => {
+        Promise.all([minDisplay, media]).then(() => {
             if (cancelled) return;
             setLoading(false);
         });
@@ -80,7 +86,22 @@ export default function App() {
         };
     }, []);
 
-    if (loading) return <Reveal />;
+    // Lift the preloader once the site has mounted underneath it, so the
+    // fade reveals a drawn page rather than an empty one.
+    useEffect(() => {
+        if (loading) return;
+        const el = document.getElementById('preloader');
+        if (!el) return;
+        el.querySelector<HTMLElement>('.pl-progress')?.style.setProperty('--p', '1');
+        const fade = setTimeout(() => el.classList.add('is-done'), 60);
+        const remove = setTimeout(() => el.remove(), 600);
+        return () => {
+            clearTimeout(fade);
+            clearTimeout(remove);
+        };
+    }, [loading]);
+
+    if (loading) return null;
 
     return (
         <BrowserRouter>
@@ -213,6 +234,21 @@ function HomePage() {
         let vel = 0; // px per ms
         let coastId = 0;
 
+        /** a flick lets the film coast on, like a reel, and bleed off fast */
+        const coastFrom = (v0: number) => {
+            let v = v0;
+            let prev = performance.now();
+            const coast = (now: number) => {
+                const dt = now - prev;
+                prev = now;
+                v *= Math.pow(0.992, dt);
+                if (Math.abs(v) < 0.02) return;
+                nudge(v * dt);
+                coastId = requestAnimationFrame(coast);
+            };
+            coastId = requestAnimationFrame(coast);
+        };
+
         const onDown = (e: PointerEvent) => {
             fingers.add(e.pointerId);
             cancelAnimationFrame(coastId);
@@ -252,19 +288,74 @@ function HomePage() {
             if (!swiped) return;
             // a finger that stopped before lifting leaves the film where it is
             if (performance.now() - lastT > 90) return;
-            // a flick lets the film coast on, like a reel, and bleed off fast
-            let v = vel;
-            let prev = performance.now();
-            const coast = (now: number) => {
-                const dt = now - prev;
-                prev = now;
-                v *= Math.pow(0.992, dt);
-                if (Math.abs(v) < 0.02) return;
-                nudge(v * dt);
-                coastId = requestAnimationFrame(coast);
-            };
-            coastId = requestAnimationFrame(coast);
+            coastFrom(vel);
         };
+        // Scrolling plays the reel too, which is what people try first: a
+        // swipe-only reel left a scroll moving the page instead. Only at the
+        // top of the page, where the hero is all there is. The finger's travel
+        // goes to the film until the reel reaches an end in that direction,
+        // and from there the page scrolls as normal, so the sections below
+        // never move. Finger up rolls it on, finger down rolls it back.
+        //
+        // The page is held from the FIRST movement, before the gesture's
+        // direction is known: a browser commits to scrolling on that first
+        // move and ignores any later attempt to cancel it. Two fingers are a
+        // pinch and are never held.
+        const maxPx = () => FADE_PX + archiveProgress.reelTravelPx + FADE_PX;
+        let tActive = false;
+        let tRolled = false;
+        let tAxis: null | 'x' | 'y' = null;
+        let tStartX = 0;
+        let tStartY = 0;
+        let tLastY = 0;
+        let tLastT = 0;
+        let tVel = 0;
+        const onTouchStart = (e: TouchEvent) => {
+            tActive = e.touches.length === 1 && !zoomedIn();
+            tRolled = false;
+            tAxis = null;
+            const t = e.touches[0];
+            tStartX = t.clientX;
+            tStartY = tLastY = t.clientY;
+            tLastT = performance.now();
+            tVel = 0;
+        };
+        const onTouchMove = (e: TouchEvent) => {
+            if (!tActive) return;
+            if (e.touches.length !== 1) {
+                tActive = false;
+                return;
+            }
+            const t = e.touches[0];
+            const dy = t.clientY - tLastY;
+            tLastY = t.clientY;
+            if (tAxis === null && Math.hypot(t.clientX - tStartX, t.clientY - tStartY) > 8) {
+                tAxis = Math.abs(t.clientY - tStartY) >= Math.abs(t.clientX - tStartX) ? 'y' : 'x';
+            }
+            if (tAxis === 'x') return; // a sideways swipe: the stage handler has it
+            if (window.scrollY > 1) return; // the page has moved on: let it scroll
+            const room = dy < 0 ? swipePx < maxPx() : dy > 0 ? swipePx > 0 : true;
+            if (!room) return; // at an end of the reel: the page takes it from here
+            if (e.cancelable) e.preventDefault();
+            if (tAxis !== 'y') return; // still deciding: hold the page, move nothing
+            cancelAnimationFrame(coastId);
+            tRolled = true;
+            nudge(dy); // the film moves as far as the finger
+            const now = performance.now();
+            tVel = dy / Math.max(1, now - tLastT);
+            tLastT = now;
+        };
+        const onTouchEnd = () => {
+            if (!tActive || !tRolled) return;
+            tActive = false;
+            if (performance.now() - tLastT > 90) return;
+            coastFrom(tVel);
+        };
+
+        // opened from part-way down: bring the hero back to the top first,
+        // since that is where scrolling plays the reel
+        if (window.scrollY > 1) glideTo(0);
+
         // a swipe can still end in a click; it must not close the archive
         const onClickCapture = (e: MouseEvent) => {
             if (!swiped) return;
@@ -278,7 +369,15 @@ function HomePage() {
         window.addEventListener('pointerup', onUp);
         window.addEventListener('pointercancel', onUp);
         el.addEventListener('click', onClickCapture, true);
+        window.addEventListener('touchstart', onTouchStart, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+        window.addEventListener('touchend', onTouchEnd);
+        window.addEventListener('touchcancel', onTouchEnd);
         return () => {
+            window.removeEventListener('touchstart', onTouchStart);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchend', onTouchEnd);
+            window.removeEventListener('touchcancel', onTouchEnd);
             cancelAnimationFrame(coastId);
             vv?.removeEventListener('resize', setTouch);
             el.style.touchAction = prevTouch;
@@ -327,11 +426,6 @@ function HomePage() {
         };
     }, [isPhone, archiveOpen]);
 
-    // user is on the home page now — start pulling the other pages' images
-    // in the background so /gallery and /team are warm when they get there
-    useEffect(() => {
-        startBackgroundMediaLoad();
-    }, []);
 
     return (
         <>
@@ -418,7 +512,7 @@ function HomePage() {
                                     gone once the archive is open — by then it
                                     has done its job. "Tap" on a phone. */}
                                 <OutlineCaption
-                                    text={isPhone ? 'Tap & swipe to explore the archive of voices' : 'Click & scroll to explore the archive of voices'}
+                                    text={`${isPhone ? 'Tap' : 'Click'} & scroll to explore the archive of voices`}
                                     endPct={88}
                                     fontPx={Math.min(8.5, Math.max(5.5, window.innerWidth * 0.0058))}
                                     stageW={stage.width}

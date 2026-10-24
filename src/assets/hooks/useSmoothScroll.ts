@@ -29,6 +29,12 @@ export function jumpTo(y: number) {
     } else window.scrollTo(0, y);
 }
 
+/** Glide to `y` on the site's usual easing. */
+export function glideTo(y: number) {
+    if (active) active.scrollTo(y);
+    else window.scrollTo({ top: y, behavior: "smooth" });
+}
+
 export function useSmoothScroll() {
     useEffect(() => {
         const lenis = new Lenis({

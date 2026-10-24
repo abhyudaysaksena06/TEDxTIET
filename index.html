@@ -46,9 +46,57 @@
     <link rel="preload" as="image" href="/Speakers/dikshant2.webp" />
 
     <title>TEDxTIET 2026 — Ideas worth spreading, on stage</title>
+
+    <!-- The preloader lives here, not in React, so it paints the moment this
+         page arrives. As a component it could not appear until the whole
+         bundle had downloaded and run, and on a phone that gap was a blank
+         screen. Its look is the original preloader's, unchanged: the word,
+         and the red bar sweeping behind it. The hairline under it fills as
+         the site's media actually loads. App.tsx lifts it. The page is black
+         from the first byte too, as the stylesheet arrives later. -->
+    <style>
+      html, body { background: #000; margin: 0; }
+      #preloader {
+        position: fixed; inset: 0; z-index: 2147483000;
+        display: flex; align-items: center; justify-content: center;
+        background: #000;
+        transition: opacity 450ms ease;
+      }
+      #preloader.is-done { opacity: 0; pointer-events: none; }
+      #preloader .reveal-container { position: relative; display: inline-block; overflow: hidden; }
+      #preloader .reveal-text {
+        font-size: 4rem; font-weight: bold; font-family: Arial, sans-serif; color: #fff;
+        position: relative; transform: translateY(100%);
+        animation: pl-reveal-up 1.2s ease-out forwards; z-index: 2;
+      }
+      #preloader .reveal-bar {
+        position: absolute; top: 0; left: 0; height: 100%; width: 100%;
+        background: red; transform: translateX(-100%);
+        animation: pl-sweep 1s ease-out forwards; z-index: 1;
+      }
+      #preloader .pl-progress {
+        position: absolute; left: 50%; bottom: max(2.5rem, env(safe-area-inset-bottom));
+        width: min(200px, 40vw); height: 2px; transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.12); overflow: hidden;
+      }
+      #preloader .pl-progress i {
+        position: absolute; inset: 0; background: #eb0028;
+        transform-origin: left; transform: scaleX(var(--p, 0));
+        transition: transform 300ms ease;
+      }
+      @keyframes pl-sweep { 0% { transform: translateX(-100%); } 50% { transform: translateX(0%); } 100% { transform: translateX(100%); } }
+      @keyframes pl-reveal-up { 0% { transform: translateY(100%); } 100% { transform: translateY(0%); } }
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="preloader" role="status" aria-label="Loading TEDxTIET">
+      <div class="reveal-container">
+        <span class="reveal-text">TEDxTIET</span>
+        <span class="reveal-bar"></span>
+      </div>
+      <span class="pl-progress" aria-hidden="true"><i></i></span>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
