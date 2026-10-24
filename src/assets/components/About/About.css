@@ -18,8 +18,8 @@
     - .timeline__node.is-active  → multi-layer glow box-shadow
     - .content-card-stage::before/after → floating dots + drifting spotlight
                                     (pseudo-elements + keyframes)
-    - .content-card              → glassmorphism (backdrop-filter + layered
-                                    box-shadow + translucent background)
+    - .content-card              → near-opaque card with layered box-shadow
+                                    (no backdrop-filter — see the rule below)
     - .content-card__watermark   → gradient-clip-text "engraved" numeral
     - .about-scroll-chevron      → CSS-drawn arrow + bounce keyframe
     - @keyframes                 → every animation used above
@@ -291,8 +291,12 @@
 .content-card {
   background: var(--tedx-card-bg);
   border: 1px solid var(--tedx-card-border);
-  backdrop-filter: blur(32px) saturate(120%);
-  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  /* No backdrop-filter. It blurred everything behind the card at 32px, and
+     the particles, float and spotlight layers behind it never stop moving,
+     so the blur was redone every frame — the About section's lag, worst on
+     the third card, the largest. The card is 95% opaque, so the blur only
+     ever showed through at 5%: it cost a full blur pass for a difference
+     nobody could see. */
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45), 0 0 60px -12px rgba(230, 43, 30, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 40px 60px -40px rgba(230, 43, 30, 0.06), inset 0 -30px 50px -30px rgba(0, 0, 0, 0.5);

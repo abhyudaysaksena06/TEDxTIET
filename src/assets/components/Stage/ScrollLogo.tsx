@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type { RefObject } from "react";
 import StageScene from "./StageScene";
 import useScrollProgress from "../../hooks/useScrollProgress";
+import type { ProgressStore } from "../../lib/sequenceProgress";
 import { TOP, BOTTOM } from "../ScreenOutline";
 
 /**
@@ -46,6 +47,8 @@ interface Props {
     /** false until the user clicks the hero: the reel sequence is dormant */
     active?: boolean;
     onSelect?: () => void;
+    /** drive the sequence from this instead of the scroll track (phones swipe it) */
+    progressStore?: ProgressStore | null;
 }
 
 
@@ -56,8 +59,9 @@ export default function ScrollLogo({
     scaleK = 1,
     stageW = 0,
     stageH = 0,
+    progressStore = null,
 }: Props) {
-    const progress = useScrollProgress(scrollRootRef);
+    const progress = useScrollProgress(scrollRootRef, progressStore);
     const frozenRef = useRef({ frozen: false, x: FROZEN_ROTATION.x, y: FROZEN_ROTATION.y });
     // "as soon as I scroll" — any progress at all freezes cursor/drag rotation
     frozenRef.current.frozen = active && progress > 0;

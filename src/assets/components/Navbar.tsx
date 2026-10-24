@@ -345,21 +345,25 @@ export default function Navbar() {
                             {/* clears the fixed bar */}
                             <div aria-hidden="true" className="h-[84px] shrink-0" />
 
-                            <nav
-                                aria-label="Pages"
-                                className="flex flex-1 flex-col justify-center overflow-y-auto"
-                            >
-                                <ul className="list-none border-t border-black/20">
+                            {/* The rows split whatever height there is between
+                                the bar and the foot, equally, and each name is
+                                sized from its row as well as from the width. They
+                                were sized by width alone, so at six rows a
+                                screen shorter than ~900px ran out of room and the
+                                list grew a scrollbar. Now it cannot outgrow the
+                                screen, so it clips instead of scrolling. */}
+                            <nav aria-label="Pages" className="min-h-0 flex-1 overflow-hidden">
+                                <ul className="flex h-full list-none flex-col border-t border-black/20 [container-type:size]">
                                     {DESTINATIONS.map((d, i) => {
                                         const isCurrent = normalizePath(d.href) === currentPath;
                                         return (
-                                            <li key={d.href} className="border-b border-black/20">
-                                                <motion.div custom={i} variants={linkVariants}>
+                                            <li key={d.href} className="min-h-0 flex-1 border-b border-black/20">
+                                                <motion.div custom={i} variants={linkVariants} className="h-full">
                                                     <Link
                                                         to={d.href}
                                                         onClick={() => setIsOpen(false)}
                                                         aria-current={isCurrent ? "page" : undefined}
-                                                        className="group relative flex items-center justify-between gap-5 overflow-hidden px-5 py-3 sm:px-8 md:px-12 md:py-4"
+                                                        className="group relative flex h-full items-center justify-between gap-5 overflow-hidden px-5 sm:px-8 md:px-12"
                                                     >
                                                         {/* the row fills with the
                                                             opposite ground — the
@@ -373,8 +377,13 @@ export default function Navbar() {
                                                             <span
                                                                 className="font-['Anton'] uppercase leading-[0.95] text-white"
                                                                 style={{
-                                                                    fontSize:
-                                                                        "clamp(2rem, 7vw, 4.25rem)",
+                                                                    // the old width-based size
+                                                                    // (never under 2rem), capped
+                                                                    // at 62% of a row's height
+                                                                    // — cqh is the list's height
+                                                                    fontSize: `clamp(1.5rem, min(max(2rem, 7vw), ${
+                                                                        62 / DESTINATIONS.length
+                                                                    }cqh), 4.25rem)`,
                                                                 }}
                                                             >
                                                                 {d.title}

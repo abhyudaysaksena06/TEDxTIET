@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import About, { ABOUT_SECTIONS } from "./About";
-import useScrollProgress from "../../hooks/useScrollProgress";
 
 const COUNT = (ABOUT_SECTIONS as unknown[]).length; // 3: TED -> TEDx -> TEDxTIET
 
@@ -13,10 +12,37 @@ const COUNT = (ABOUT_SECTIONS as unknown[]).length; // 3: TED -> TEDx -> TEDxTIE
  */
 export default function AboutSection() {
     const scrollRootRef = useRef<HTMLDivElement>(null);
-    const progress = useScrollProgress(scrollRootRef);
 
-    // progress 0..1 -> card 0..COUNT-1, with each card holding an equal slice
-    const active = Math.min(COUNT - 1, Math.floor(progress * COUNT * 0.999));
+    // Only the card index is state. This used to keep the raw scroll progress
+    // in state, so the whole About component re-rendered on every frame of
+    // scrolling through it, though all it ever needs is which of three cards
+    // is showing. Now it renders when that changes: twice on the way through.
+    const [active, setActive] = useState(0);
+    useEffect(() => {
+        let frame = 0;
+        const read = () => {
+            frame = 0;
+            const el = scrollRootRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            const scrollable = rect.height - window.innerHeight;
+            const progress = Math.min(1, Math.max(0, scrollable > 0 ? -rect.top / scrollable : 0));
+            // progress 0..1 -> card 0..COUNT-1, with each card holding an equal slice
+            const next = Math.min(COUNT - 1, Math.floor(progress * COUNT * 0.999));
+            setActive((prev) => (prev === next ? prev : next));
+        };
+        const onScroll = () => {
+            if (!frame) frame = requestAnimationFrame(read);
+        };
+        read();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", read);
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", read);
+            if (frame) cancelAnimationFrame(frame);
+        };
+    }, []);
 
     // clicking a timeline node scrolls to that card's slice
     useEffect(() => {

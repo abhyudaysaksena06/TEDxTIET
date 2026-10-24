@@ -18,7 +18,7 @@ const MUTED = '#8a8a8a';
 
 export default function Speaker() {
     return (
-        <div className="relative min-h-screen bg-black text-white">
+        <div className="relative h-full bg-black text-white">
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 opacity-[0.05]"
@@ -37,7 +37,8 @@ export default function Speaker() {
                 }}
             />
 
-            <main className="relative mx-auto w-full max-w-[1440px] px-5 pb-28 md:px-10">
+            {/* one screen, no scroll: the contact row sits on the screen's foot */}
+            <main className="relative mx-auto flex h-full w-full max-w-[1440px] flex-col px-5 pb-8 md:px-10 md:pb-10">
                 <h1 className="sr-only">Speakers</h1>
 
                 <p
@@ -84,8 +85,14 @@ export default function Speaker() {
                     </div>
                 </div>
 
-                {/* the years that have happened, same device as Our Impact */}
-                <div className="mt-16 border-t pt-6 md:mt-24" style={{ borderColor: RULE }}>
+                {/* The years that have happened, same device as Our Impact. The
+                    page is one fixed screen, so on short ones (a small phone,
+                    a 768px laptop) this is what gives way: it repeats Our
+                    Impact, where everything else here is the page's point. */}
+                <div
+                    className="mt-10 border-t pt-6 md:mt-16 [@media(max-height:800px)]:hidden"
+                    style={{ borderColor: RULE }}
+                >
                     <p
                         className="font-mono text-[10px] uppercase tracking-[0.2em]"
                         style={{ color: MUTED }}
@@ -113,8 +120,9 @@ export default function Speaker() {
                     </div>
                 </div>
 
+                <div aria-hidden="true" className="min-h-8 flex-1" />
                 <div
-                    className="mt-14 flex flex-col gap-3 border-t pt-6 font-mono text-[10px] uppercase tracking-[0.2em] sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 border-t pt-6 font-mono text-[10px] uppercase tracking-[0.2em] sm:flex-row sm:items-center sm:justify-between"
                     style={{ borderColor: RULE, color: MUTED }}
                 >
                     <p>Want to propose a speaker?</p>

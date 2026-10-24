@@ -50,6 +50,11 @@ body {
 }
 
 html {
+    /* Black on the root itself, not only on body. Where Safari has not
+       painted yet (a fast scroll into a heavy section, rubber-banding past
+       either end, the toolbars collapsing) it shows the root, and with this
+       unset that could flash white before the content arrived. */
+    background-color: #000000;
     scrollbar-width: none;
     /* dark form controls + scrollbars instead of light-mode defaults */
     color-scheme: dark;

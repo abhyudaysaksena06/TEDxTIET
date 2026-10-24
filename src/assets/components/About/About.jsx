@@ -11,8 +11,8 @@ import "./About.css";
  *   - Layout, spacing, sizing, typography, flex/grid, and color come from
  *     Tailwind utility classes directly on the JSX below.
  *   - Complex visual effects that Tailwind isn't a good fit for — the dark
- *     gradient background, glassmorphism (backdrop-filter + layered
- *     box-shadow), gradient-clip-text, ::before/::after pseudo-elements,
+ *     gradient background, the card's layered box-shadow,
+ *     gradient-clip-text, ::before/::after pseudo-elements,
  *     and every @keyframes animation — live in About.css, hooked to a
  *     small set of custom class names (about-stage, timeline,
  *     content-card-stage, content-card, timeline__rail-fill,

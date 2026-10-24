@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import RouteTitle from './components/RouteTitle';
 import { motion } from 'framer-motion';
 import Navbar from './components/Navbar';
-import ScrollLogo from './components/Stage/ScrollLogo';
+import ScrollLogo, { SEQ_END, LOGO_MOVE_END, REEL_END } from './components/Stage/ScrollLogo';
+import { createProgressStore } from './lib/sequenceProgress';
 import ScreenOutline, { OutlineCaption } from './components/ScreenOutline';
 import ReelOnScreen from './components/Reel/ReelOnScreen';
 import CarpetFigure, { CARPET, FIGURE_H } from './components/Stage/CarpetFigure';
@@ -23,7 +24,7 @@ const ContactPage = lazy(() => import('./pages/ContactForm'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 import Reveal from './components/Reveal';
 import { preloadHeroMedia, startBackgroundMediaLoad } from './lib/preloadMedia';
-import useSmoothScroll from './hooks/useSmoothScroll';
+import useSmoothScroll, { jumpTo } from './hooks/useSmoothScroll';
 import useStageRect from './hooks/useStageRect';
 import useIsPhone from './hooks/useIsPhone';
 const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
@@ -32,10 +33,22 @@ const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
  * Ported pages sit under the fixed navbar AND under the page title that now
  * hangs below it, so the clearance has to cover both.
  */
-function PageShell({ children }: { children: React.ReactNode }) {
+function PageShell({ children, fit = false }: { children: React.ReactNode; fit?: boolean }) {
     // phones carry the page title as a full heading under the bar, so the
     // content starts lower there; from sm up this is the old clamp exactly
-    return <div className="min-h-screen bg-black pt-[10rem] sm:pt-[clamp(8rem,18vw,11rem)]">{children}</div>;
+    const clearance = 'pt-[10rem] sm:pt-[clamp(8rem,18vw,11rem)]';
+    if (fit) {
+        // Exactly one screen that does not scroll, for the "coming soon"
+        // pages: there is nothing further down to scroll to. svh is the
+        // height with the browser's bars showing, so a phone's toolbar cannot
+        // push it past the screen.
+        return (
+            <div className={`flex h-[100svh] flex-col overflow-hidden bg-black ${clearance}`}>
+                <div className="min-h-0 flex-1">{children}</div>
+            </div>
+        );
+    }
+    return <div className={`min-h-screen bg-black ${clearance}`}>{children}</div>;
 }
 
 // how long the preloader animation needs to play out before it can be dismissed
@@ -91,8 +104,8 @@ export default function App() {
                 <Route path="/register" element={<RegistrationPage />} />
                 {/* the globe owns the whole viewport here — no shell, no page scroll */}
                 <Route path="/gallery" element={<SphereGallery fullPage />} />
-                <Route path="/speakers" element={<PageShell><SpeakersPage /></PageShell>} />
-                <Route path="/sponsors" element={<PageShell><SponsorsPage /></PageShell>} />
+                <Route path="/speakers" element={<PageShell fit><SpeakersPage /></PageShell>} />
+                <Route path="/sponsors" element={<PageShell fit><SponsorsPage /></PageShell>} />
                 <Route path="/team" element={<PageShell><TeamPage /></PageShell>} />
                 <Route path="/alumni" element={<PageShell><AlumniPage /></PageShell>} />
                 <Route path="/event" element={<PageShell><EventPage /></PageShell>} />
@@ -138,8 +151,181 @@ function HomePage() {
         h: FIGURE_H,
     });
 
-    // the hero only has something to pin against when it owns a full screen
-    const heroPinned = !(isPhone && !archiveOpen);
+    // The hero only has something to pin against when it owns a full screen.
+    // On a phone it never pins, archive open or not: pinning it and opening the
+    // 700vh track pushed every section below six screens down, so tapping the
+    // hero turned the rest of the page black. There the archive is swiped.
+    const heroPinned = !isPhone;
+
+    // On phones the archive sequence is driven by swiping across the stage
+    // rather than by the scroll track; see lib/sequenceProgress.
+    const [archiveProgress] = useState(createProgressStore);
+    useEffect(() => {
+        const el = stageBoxRef.current;
+        if (!isPhone || !archiveOpen || !el) {
+            archiveProgress.set(0); // reopen from the start
+            return;
+        }
+        // Vertical swipes keep scrolling the page and horizontal ones are ours,
+        // but pinch-zoom must stay the browser's: people zoom in to see a
+        // speaker, and plain pan-y blocked that. Once zoomed in, a sideways
+        // drag has to pan the zoomed view, so the reel stands down entirely.
+        const prevTouch = el.style.touchAction;
+        const vv = window.visualViewport;
+        const zoomedIn = () => (vv ? vv.scale > 1.01 : false);
+        const setTouch = () => {
+            el.style.touchAction = zoomedIn() ? 'auto' : 'pan-y pinch-zoom';
+        };
+        setTouch();
+        vv?.addEventListener('resize', setTouch);
+
+        // Swipe distance, laid out in three phases. The title's fades get a
+        // short fixed run; at the film's own pace the first fade alone took
+        // ~700px of swiping, so a swipe only dimmed the title and the film sat
+        // still. The film in between moves exactly as far as the finger. It
+        // stops at SEQ_END: past that the desktop track only slides the next
+        // section up, which means nothing here.
+        const FADE_PX = 90;
+        let swipePx = 0;
+        const toProgress = (s: number, travel: number) => {
+            if (s <= FADE_PX) return (s / FADE_PX) * LOGO_MOVE_END;
+            s -= FADE_PX;
+            if (s <= travel) return LOGO_MOVE_END + (s / travel) * (REEL_END - LOGO_MOVE_END);
+            s -= travel;
+            return REEL_END + Math.min(1, s / FADE_PX) * (SEQ_END - REEL_END);
+        };
+        const nudge = (px: number) => {
+            const travel = archiveProgress.reelTravelPx;
+            if (!travel) return;
+            // a swipe to the left rolls the film on
+            swipePx = Math.min(FADE_PX + travel + FADE_PX, Math.max(0, swipePx - px));
+            archiveProgress.set(toProgress(swipePx, travel));
+        };
+
+        let down = false;
+        let swiped = false;
+        const fingers = new Set<number>();
+        let axis: null | 'x' | 'y' = null;
+        let startX = 0;
+        let startY = 0;
+        let lastX = 0;
+        let lastT = 0;
+        let vel = 0; // px per ms
+        let coastId = 0;
+
+        const onDown = (e: PointerEvent) => {
+            fingers.add(e.pointerId);
+            cancelAnimationFrame(coastId);
+            // a second finger means a pinch: drop the swipe, and swallow the
+            // click it might end in
+            if (fingers.size > 1 || zoomedIn()) {
+                if (down) swiped = true;
+                down = false;
+                return;
+            }
+            down = true;
+            swiped = false;
+            axis = null;
+            startX = lastX = e.clientX;
+            startY = e.clientY;
+            lastT = performance.now();
+            vel = 0;
+        };
+        const onMove = (e: PointerEvent) => {
+            if (!down) return;
+            if (axis === null && Math.hypot(e.clientX - startX, e.clientY - startY) > 8) {
+                axis = Math.abs(e.clientX - startX) > Math.abs(e.clientY - startY) ? 'x' : 'y';
+            }
+            if (axis !== 'x') return;
+            swiped = true;
+            const now = performance.now();
+            const step = e.clientX - lastX;
+            nudge(step); // the film moves exactly as far as the finger
+            vel = step / Math.max(1, now - lastT);
+            lastX = e.clientX;
+            lastT = now;
+        };
+        const onUp = (e: PointerEvent) => {
+            fingers.delete(e.pointerId);
+            if (!down) return;
+            down = false;
+            if (!swiped) return;
+            // a finger that stopped before lifting leaves the film where it is
+            if (performance.now() - lastT > 90) return;
+            // a flick lets the film coast on, like a reel, and bleed off fast
+            let v = vel;
+            let prev = performance.now();
+            const coast = (now: number) => {
+                const dt = now - prev;
+                prev = now;
+                v *= Math.pow(0.992, dt);
+                if (Math.abs(v) < 0.02) return;
+                nudge(v * dt);
+                coastId = requestAnimationFrame(coast);
+            };
+            coastId = requestAnimationFrame(coast);
+        };
+        // a swipe can still end in a click; it must not close the archive
+        const onClickCapture = (e: MouseEvent) => {
+            if (!swiped) return;
+            swiped = false;
+            e.stopPropagation();
+            e.preventDefault();
+        };
+
+        el.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        el.addEventListener('click', onClickCapture, true);
+        return () => {
+            cancelAnimationFrame(coastId);
+            vv?.removeEventListener('resize', setTouch);
+            el.style.touchAction = prevTouch;
+            el.removeEventListener('pointerdown', onDown);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+            el.removeEventListener('click', onClickCapture, true);
+        };
+    }, [isPhone, archiveOpen, archiveProgress]);
+
+    // Desktop: hold the reel where it is through a zoom or a resize. The track
+    // is 700vh, so zooming changes its height in CSS pixels but leaves the
+    // scroll offset alone, and the same offset lands further through the reel:
+    // zooming in to look at a speaker jumped the reel on by about two of them.
+    // Remember the fraction from the last scroll at a settled size, and put
+    // the reader back on it after the size changes.
+    useEffect(() => {
+        const el = scrollRootRef.current;
+        if (isPhone || !archiveOpen || !el) return;
+        const fraction = () => {
+            const r = el.getBoundingClientRect();
+            const scrollable = r.height - window.innerHeight;
+            return scrollable > 0 ? Math.min(1, Math.max(0, -r.top / scrollable)) : 0;
+        };
+        let held = fraction();
+        let settledH = window.innerHeight;
+        let settledW = window.innerWidth;
+        const onScroll = () => {
+            // the browser can move the scroll while it relays out for the new
+            // size; those are not the reader's, so they must not overwrite it
+            if (window.innerHeight !== settledH || window.innerWidth !== settledW) return;
+            held = fraction();
+        };
+        const onResize = () => {
+            settledH = window.innerHeight;
+            settledW = window.innerWidth;
+            const top = el.getBoundingClientRect().top + window.scrollY;
+            jumpTo(top + held * (el.offsetHeight - window.innerHeight));
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onResize);
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onResize);
+        };
+    }, [isPhone, archiveOpen]);
 
     // user is on the home page now — start pulling the other pages' images
     // in the background so /gallery and /team are warm when they get there
@@ -232,7 +418,7 @@ function HomePage() {
                                     gone once the archive is open — by then it
                                     has done its job. "Tap" on a phone. */}
                                 <OutlineCaption
-                                    text={`${isPhone ? 'Tap' : 'Click'} & scroll to explore the archive of voices`}
+                                    text={isPhone ? 'Tap & swipe to explore the archive of voices' : 'Click & scroll to explore the archive of voices'}
                                     endPct={88}
                                     fontPx={Math.min(8.5, Math.max(5.5, window.innerWidth * 0.0058))}
                                     stageW={stage.width}
@@ -245,16 +431,19 @@ function HomePage() {
                                     scaleK={isPhone ? 0.9 : stage.k}
                                     stageW={stage.width}
                                     stageH={stage.height}
+                                    progressStore={isPhone ? archiveProgress : null}
                                     onSelect={placing ? undefined : () => {
                                         // collapsing a 700vh track from halfway down would
-                                        // yank the page, so close from the top
-                                        if (archiveOpen) window.scrollTo({ top: 0 });
+                                        // yank the page, so close from the top. Phones
+                                        // have no track, so they stay where they are.
+                                        if (archiveOpen && !isPhone) window.scrollTo({ top: 0 });
                                         setArchiveOpen((open) => !open);
                                     }}
                                 />
                                 {archiveOpen && (
                                     <ReelOnScreen
                                         scrollRootRef={scrollRootRef}
+                                        progressStore={isPhone ? archiveProgress : null}
                                         onCentre={(i, centred) => {
                                             setCentreSpeaker(i);
                                             setSpeakerCentred(centred);
@@ -308,7 +497,7 @@ function HomePage() {
                 aria-hidden="true"
                 className="pointer-events-none"
                 style={{
-                    height: archiveOpen ? '700vh' : heroPinned ? '100vh' : '0px',
+                    height: archiveOpen && !isPhone ? '700vh' : heroPinned ? '100vh' : '0px',
                     marginTop: heroPinned ? '-100vh' : 0,
                 }}
             />

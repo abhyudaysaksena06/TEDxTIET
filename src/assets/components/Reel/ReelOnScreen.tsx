@@ -4,6 +4,7 @@ import CurvedPerforations, { BAND_H, HOLES } from "./CurvedPerforations";
 import { filmFramesData } from "./filmData";
 import { TOP, BOTTOM, smoothPath } from "../ScreenOutline";
 import { LOGO_MOVE_END, REEL_END } from "../Stage/ScrollLogo";
+import type { ProgressStore } from "../../lib/sequenceProgress";
 
 // same outline path as ScreenOutline, normalized to 0-1 for an objectBoundingBox clipPath
 function buildClipPath() {
@@ -76,6 +77,8 @@ interface Props {
      * a handful across the whole sequence.
      */
     onCentre?: (index: number, centred: boolean) => void;
+    /** drive the reel from this instead of the scroll track (phones swipe it) */
+    progressStore?: ProgressStore | null;
 }
 
 /**
@@ -93,7 +96,7 @@ interface Props {
  * and writes transforms. No React render, no layout read, per frame. The
  * measurement is redone only when the element actually resizes.
  */
-export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
+export default function ReelOnScreen({ scrollRootRef, onCentre, progressStore = null }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const perfRef = useRef<HTMLDivElement>(null);
@@ -147,6 +150,9 @@ export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
                       )
                     : [],
             };
+            // tell a swipe driver how far the film travels, so it can move
+            // the film exactly as far as the finger
+            if (progressStore) progressStore.reelTravelPx = geom.totalTravel;
         };
 
         /** writes one frame of the sequence; pure math, no layout reads */
@@ -223,10 +229,14 @@ export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
 
         const tick = () => {
             const root = scrollRootRef.current;
-            if (root) {
-                const rect = root.getBoundingClientRect();
-                const scrollable = rect.height - window.innerHeight;
-                const raw = scrollable > 0 ? -rect.top / scrollable : 0;
+            if (progressStore || root) {
+                let raw: number;
+                if (progressStore) raw = progressStore.get();
+                else {
+                    const rect = root!.getBoundingClientRect();
+                    const scrollable = rect.height - window.innerHeight;
+                    raw = scrollable > 0 ? -rect.top / scrollable : 0;
+                }
                 const progress = Math.min(1, Math.max(0, raw));
                 const p = Math.min(
                     1,
@@ -256,7 +266,7 @@ export default function ReelOnScreen({ scrollRootRef, onCentre }: Props) {
             cancelAnimationFrame(frameId);
             ro.disconnect();
         };
-    }, [scrollRootRef]);
+    }, [scrollRootRef, progressStore]);
 
     return (
         <>

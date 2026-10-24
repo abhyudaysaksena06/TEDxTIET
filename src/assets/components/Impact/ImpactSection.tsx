@@ -37,8 +37,9 @@ const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 /** the sequence, in ms */
 const T = {
     mastOut: 0,
-    firstRow: 240,
-    rowStep: 150,
+    // tightened from 240 / 150: people were waiting on the section
+    firstRow: 160,
+    rowStep: 120,
     mark: 130, // after its row starts
     label: 210,
 };
@@ -94,7 +95,7 @@ function Counter({
 
     useEffect(() => {
         if (!run) return;
-        const DURATION = 1600;
+        const DURATION = 1300;
         let frame = 0;
         let start = 0;
 
@@ -380,7 +381,9 @@ function StatRow({
 }
 
 export default function ImpactSection() {
-    const { ref, seen } = useInView<HTMLElement>(0.4);
+    // 0.4 left a blank section on screen for much of a scroll before
+    // anything moved; 0.15 was too early to watch. 0.25 sits between.
+    const { ref, seen } = useInView<HTMLElement>(0.25);
 
     return (
         <section

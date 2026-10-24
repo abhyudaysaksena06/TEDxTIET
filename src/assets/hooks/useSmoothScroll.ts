@@ -12,6 +12,23 @@ import Lenis from "lenis";
  * (useScrollProgress, IntersectionObservers, sticky positioning) keeps working
  * untouched.
  */
+let active: Lenis | null = null;
+
+/**
+ * Jump straight to `y`, without easing. Goes through Lenis when it is
+ * running: it keeps its own copy of the scroll position, so a bare
+ * window.scrollTo in the middle of a glide would be pulled back toward the
+ * old target on its next frame. Lenis also caps every jump at the page height
+ * it last measured, and after a zoom or resize that measurement lags, so it
+ * re-measures first or the jump lands short.
+ */
+export function jumpTo(y: number) {
+    if (active) {
+        active.resize();
+        active.scrollTo(y, { immediate: true, force: true });
+    } else window.scrollTo(0, y);
+}
+
 export function useSmoothScroll() {
     useEffect(() => {
         const lenis = new Lenis({
@@ -28,6 +45,8 @@ export function useSmoothScroll() {
             touchMultiplier: 1.0,
         });
 
+        active = lenis;
+
         let frame = 0;
         const raf = (time: number) => {
             lenis.raf(time);
@@ -37,6 +56,7 @@ export function useSmoothScroll() {
 
         return () => {
             cancelAnimationFrame(frame);
+            if (active === lenis) active = null;
             lenis.destroy();
         };
     }, []);
