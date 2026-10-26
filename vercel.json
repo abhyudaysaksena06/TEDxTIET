@@ -1,6 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/tedxtiet/:file(.*\\.[a-zA-Z0-9]+)",
+      "destination": "/:file"
+    },
+    {
+      "source": "/tedxtiet/:path*",
+      "destination": "/tedxtiet.html"
+    },
+    {
+      "source": "/tedxtiet",
+      "destination": "/tedxtiet.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

@@ -26,6 +26,7 @@ import { preloadAllMedia } from './lib/preloadMedia';
 import useSmoothScroll, { jumpTo, glideTo } from './hooks/useSmoothScroll';
 import useStageRect from './hooks/useStageRect';
 import useIsPhone from './hooks/useIsPhone';
+import { asset, ROUTER_BASENAME } from "./lib/basePath";
 const SphereGallery = lazy(() => import('./components/Gallery/SphereGallery'));
 
 /**
@@ -104,7 +105,8 @@ export default function App() {
     if (loading) return null;
 
     return (
-        <BrowserRouter>
+        // empty at the root; "/tedxtiet" when served under the mrdev4u portfolio
+        <BrowserRouter basename={ROUTER_BASENAME}>
             <RouteTitle />
             <Navbar />
             <Suspense
@@ -485,7 +487,7 @@ function HomePage() {
                                 }}
                             >
                                 <img
-                                    src="/HOME_BG.webp"
+                                    src={asset("/HOME_BG.webp")}
                                     alt=""
                                     aria-hidden="true"
                                     width={1375}

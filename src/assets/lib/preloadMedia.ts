@@ -18,10 +18,11 @@ import { filmFramesData } from "../components/Reel/filmData";
 import { IMAGE_COUNT } from "../components/Gallery/galleryPhotos";
 import { BOARD_LEFT, BOARD_RIGHT, COMMITTEE_LEFT, COMMITTEE_RIGHT } from "../data/team";
 
+import { asset } from "./basePath";
 const reel = (filmFramesData as { image: string }[]).map((f) => f.image);
 
 /** what the curtain lifts onto: the stage and the reel's portraits */
-export const HERO_MEDIA: string[] = ["/HOME_BG.webp", ...reel];
+export const HERO_MEDIA: string[] = [asset("/HOME_BG.webp"), ...reel];
 
 // The alumni portraits are bundled assets with hashed names. A plain import
 // resolves to exactly the URL the alumni page's own imports do, so the cache
@@ -33,10 +34,10 @@ const alumni = Object.values(
 
 /** everything else a visit can reach */
 export const OTHER_MEDIA: string[] = [
-    "/tedxtiet-lockup.png",
+    asset("/tedxtiet-lockup.png"),
     // the speakers standing on the carpet
     ...reel.map((src) => src.replace("/Speakers/", "/Speakers/cut/")),
-    ...Array.from({ length: IMAGE_COUNT }, (_, i) => `/Gallery/thumb/img${i + 1}.webp`),
+    ...Array.from({ length: IMAGE_COUNT }, (_, i) => asset(`/Gallery/thumb/img${i + 1}.webp`)),
     ...[...BOARD_LEFT, ...BOARD_RIGHT, ...COMMITTEE_LEFT, ...COMMITTEE_RIGHT].map(
         (m: { image: string }) => m.image
     ),

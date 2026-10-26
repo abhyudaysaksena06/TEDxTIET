@@ -4,6 +4,7 @@ import useIsPhone from "../../hooks/useIsPhone";
 import { PHOTO_ASPECTS, IMAGE_COUNT } from "./galleryPhotos";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { layoutWordmark } from "../Stage/wordmark";
+import { asset } from "../../lib/basePath";
 
 /**
  * SphereGallery — photographs you can spin, focus and read.
@@ -385,7 +386,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             // memory and shut phones out; the focused tile fetches its own
             // full-size map, which is the only place the detail is visible.
             loader.load(
-                `/Gallery/thumb/img${photoIndex}.webp`,
+                asset(`/Gallery/thumb/img${photoIndex}.webp`),
                 (tex) => {
                     tex.colorSpace = THREE.SRGBColorSpace;
                     tex.anisotropy = maxAniso;
@@ -496,7 +497,7 @@ export default function SphereGallery({ fullPage = false }: GalleryProps) {
             releaseFull();
             fullTile = tile;
             loader.load(
-                `/Gallery/full/img${tile.userData.photoIndex}.webp`,
+                asset(`/Gallery/full/img${tile.userData.photoIndex}.webp`),
                 (tex) => {
                     // focus moved on while this was in flight
                     if (fullTile !== tile) {

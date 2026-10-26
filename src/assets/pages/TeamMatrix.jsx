@@ -1,16 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 
+import { asset } from "../lib/basePath";
 const TEAM_MEMBERS = [
-  { name: 'VRINDA CHHABRA', role: 'CURATION HEAD', image: '/ExecutiveBoard/VRINDACHHABRA.webp' },
-  { name: 'DAKSH SACHDEVA', role: 'DESIGN HEAD', image: '/ExecutiveBoard/DAKSHSACHDEVA.webp' },
-  { name: 'AANYA GARG', role: 'MARKETING HEAD', image: '/ExecutiveBoard/AANYAGARG.webp' },
-  { name: 'ANIKET GUPTA', role: 'RELATIONS AND STRATEGY HEAD', image: '/ExecutiveBoard/ANIKETGUPTA.webp' },
-  { name: 'POORVA PURI', role: 'CO LEAD ORGANISER', image: '/ExecutiveBoard/POORVAPURI.webp' },
-  { name: 'ROHAN SHARMA', role: 'Lead Organizer', image: '/ExecutiveBoard/ROHANSHARMA.webp' },
-  { name: 'SHARDOOL', role: 'CO LEAD ORGANISER', image: '/ExecutiveBoard/SHRADOOL.webp' },
-  { name: 'SANYA RAJPUT', role: 'EVENTS AND OUTREACH HEAD', image: '/ExecutiveBoard/SANYARAJPUT.webp' },
-  { name: 'SURYA PRATAP SINGH', role: 'OPERATIONS AND MEDIA HEAD', image: '/ExecutiveBoard/SURYAPRATAPSINGH.webp' },
-  { name: 'DISHA VERMA', role: 'EXPERIENCE HEAD', image: '/ExecutiveBoard/DISHAVERMA.webp' },
+  { name: 'VRINDA CHHABRA', role: 'CURATION HEAD', image: asset('/ExecutiveBoard/VRINDACHHABRA.webp') },
+  { name: 'DAKSH SACHDEVA', role: 'DESIGN HEAD', image: asset('/ExecutiveBoard/DAKSHSACHDEVA.webp') },
+  { name: 'AANYA GARG', role: 'MARKETING HEAD', image: asset('/ExecutiveBoard/AANYAGARG.webp') },
+  { name: 'ANIKET GUPTA', role: 'RELATIONS AND STRATEGY HEAD', image: asset('/ExecutiveBoard/ANIKETGUPTA.webp') },
+  { name: 'POORVA PURI', role: 'CO LEAD ORGANISER', image: asset('/ExecutiveBoard/POORVAPURI.webp') },
+  { name: 'ROHAN SHARMA', role: 'Lead Organizer', image: asset('/ExecutiveBoard/ROHANSHARMA.webp') },
+  { name: 'SHARDOOL', role: 'CO LEAD ORGANISER', image: asset('/ExecutiveBoard/SHRADOOL.webp') },
+  { name: 'SANYA RAJPUT', role: 'EVENTS AND OUTREACH HEAD', image: asset('/ExecutiveBoard/SANYARAJPUT.webp') },
+  { name: 'SURYA PRATAP SINGH', role: 'OPERATIONS AND MEDIA HEAD', image: asset('/ExecutiveBoard/SURYAPRATAPSINGH.webp') },
+  { name: 'DISHA VERMA', role: 'EXPERIENCE HEAD', image: asset('/ExecutiveBoard/DISHAVERMA.webp') },
 ];
 
 const TeamMatrix = () => {

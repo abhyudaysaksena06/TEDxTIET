@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { BASE } from "../lib/basePath";
 
-const REGISTRATION_URL = "/register";
+// a plain link (it opens a new tab), so it carries the mount prefix itself
+const REGISTRATION_URL = `${BASE}register`;
 
 export default function RegistrationSection() {
     return (

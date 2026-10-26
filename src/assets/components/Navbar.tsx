@@ -4,6 +4,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { IMAGE_COUNT } from "./Gallery/galleryPhotos";
 import { TEAM_COUNT } from "../data/team";
 
+import { asset } from "../lib/basePath";
 /**
  * Navigation.
  *
@@ -200,7 +201,7 @@ export default function Navbar() {
                         vanish, so the whole mark is knocked to black there —
                         matching the close button beside it. */}
                     <img
-                        src="/tedxtiet-lockup.png"
+                        src={asset("/tedxtiet-lockup.png")}
                         alt=""
                         width={1255}
                         height={202}

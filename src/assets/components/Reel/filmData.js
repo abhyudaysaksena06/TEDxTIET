@@ -1,3 +1,5 @@
+import { asset } from "../../lib/basePath";
+
 // Past speakers, taken from the "Archive of Voices" section of
 // TEDxTIET1/TEDxTIET26-27 (src/Components/Cards.jsx). Names, designations and
 // portraits are theirs; the frame/category labels are this reel's own chrome.
@@ -12,7 +14,7 @@ export const filmFramesData = [
     name: "Dikshant",
     role: "Singer-songwriter",
     topic: "Archive of Voices",
-    image: "/Speakers/dikshant2.webp",
+    image: asset("/Speakers/dikshant2.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -22,7 +24,7 @@ export const filmFramesData = [
     name: "Harini Sivakumar",
     role: "Entrepreneur",
     topic: "Archive of Voices",
-    image: "/Speakers/Harini2.webp",
+    image: asset("/Speakers/Harini2.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -32,7 +34,7 @@ export const filmFramesData = [
     name: "Mukti Gautam",
     role: "Influencer",
     topic: "Archive of Voices",
-    image: "/Speakers/mukti.webp",
+    image: asset("/Speakers/mukti.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -42,7 +44,7 @@ export const filmFramesData = [
     name: "Keshav Sadhna",
     role: "Actor",
     topic: "Archive of Voices",
-    image: "/Speakers/keshav2.webp",
+    image: asset("/Speakers/keshav2.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -52,7 +54,7 @@ export const filmFramesData = [
     name: "Sifat Khurana",
     role: "Entrepreneur",
     topic: "Archive of Voices",
-    image: "/Speakers/sifat.webp",
+    image: asset("/Speakers/sifat.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -62,7 +64,7 @@ export const filmFramesData = [
     name: "Drishyaa Duggal",
     role: "Cyberpsychology Evangelist",
     topic: "Archive of Voices",
-    image: "/Speakers/drishyaa.webp",
+    image: asset("/Speakers/drishyaa.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -73,7 +75,7 @@ export const filmFramesData = [
     objectPosition: "center 30%",
     role: "Film Producer",
     topic: "Archive of Voices",
-    image: "/Speakers/prateek.webp",
+    image: asset("/Speakers/prateek.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -83,7 +85,7 @@ export const filmFramesData = [
     name: "Tapesh Kumar",
     role: "Pilot",
     topic: "Archive of Voices",
-    image: "/Speakers/tapesh.webp",
+    image: asset("/Speakers/tapesh.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -94,7 +96,7 @@ export const filmFramesData = [
     objectPosition: "center 30%",
     role: "Founder, CEO",
     topic: "Archive of Voices",
-    image: "/Speakers/pritika.webp",
+    image: asset("/Speakers/pritika.webp"),
     category: "PAST SPEAKER",
   },
   {
@@ -105,7 +107,7 @@ export const filmFramesData = [
     objectPosition: "center 30%",
     role: "Singer-songwriter",
     topic: "Archive of Voices",
-    image: "/Speakers/amarabha.webp",
+    image: asset("/Speakers/amarabha.webp"),
     category: "PAST SPEAKER",
   },
 ];
