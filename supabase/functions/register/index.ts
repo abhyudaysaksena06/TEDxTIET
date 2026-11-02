@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     name?: string;
     email?: string;
     phone?: string;
-    admissionNumber?: string;
+    rollNumber?: string;
     website?: string; // honeypot
   };
 
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid request body' }, 400);
   }
 
-  const { name, email, phone, admissionNumber, website } = body;
+  const { name, email, phone, rollNumber, website } = body;
 
   // Honeypot: real users never fill this hidden field. Pretend success so
   // bots don't learn their submission was rejected.
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     return json({ success: true });
   }
 
-  if (!name?.trim() || !email?.trim() || !phone?.trim() || !admissionNumber?.trim()) {
+  if (!name?.trim() || !email?.trim() || !phone?.trim() || !rollNumber?.trim()) {
     return json({ error: 'Missing required fields' }, 400);
   }
   if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     name: name.trim(),
     email: email.trim().toLowerCase(),
     phone: phone.trim(),
-    admission_number: admissionNumber.trim(),
+    roll_number: rollNumber.trim(),
     ip_address: ip,
   });
 

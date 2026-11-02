@@ -5,7 +5,7 @@ create table if not exists registrations (
   name text not null,
   email text not null,
   phone text not null,
-  admission_number text not null,
+  roll_number text not null,
   ip_address text,
   created_at timestamptz not null default now()
 );

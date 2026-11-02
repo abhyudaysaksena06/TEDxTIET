@@ -17,7 +17,7 @@ const initialForm = {
   name: '',
   email: '',
   phone: '',
-  admissionNumber: '',
+  rollNumber: '',
   website: '', // honeypot — real users never see or fill this
 };
 
@@ -43,7 +43,7 @@ export default function RegistrationPage() {
     if (!form.name.trim()) next.name = 'Please enter your name.';
     if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Please enter a valid email.';
     if (!/^[0-9]{10}$/.test(form.phone)) next.phone = 'Please enter a valid 10-digit phone number.';
-    if (!form.admissionNumber.trim()) next.admissionNumber = 'Please enter your admission number.';
+    if (!form.rollNumber.trim()) next.rollNumber = 'Please enter your roll number.';
     if (!agreed) next.agreed = 'You must agree to the terms to continue.';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -72,7 +72,7 @@ export default function RegistrationPage() {
           name: form.name.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
-          admissionNumber: form.admissionNumber.trim(),
+          rollNumber: form.rollNumber.trim(),
           website: form.website,
         }),
       });
@@ -136,12 +136,12 @@ export default function RegistrationPage() {
               error={errors.phone}
             />
             <Field
-              label="Admission Number"
-              name="admissionNumber"
-              placeholder="Enter your admission number"
-              value={form.admissionNumber}
+              label="Roll Number"
+              name="rollNumber"
+              placeholder="Enter your roll number"
+              value={form.rollNumber}
               onChange={handleChange}
-              error={errors.admissionNumber}
+              error={errors.rollNumber}
             />
 
             {/* Honeypot: hidden from real users via CSS, bots fill every field */}
