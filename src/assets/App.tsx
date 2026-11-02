@@ -17,6 +17,7 @@ const RegistrationPage = lazy(() => import('./components/Registration/Registrati
 // Pages ported from TEDxTIET1/TEDxTIET26-27 (src/Components/*). Home stays ours.
 const SpeakersPage = lazy(() => import('./pages/Speaker'));
 const SponsorsPage = lazy(() => import('./pages/Sponsors'));
+const AdminPage = lazy(() => import('./pages/Admin'));
 const TeamPage = lazy(() => import('./pages/Team'));
 const AlumniPage = lazy(() => import('./pages/alumni'));
 const EventPage = lazy(() => import('./pages/Event'));
@@ -130,6 +131,7 @@ export default function App() {
                 <Route path="/speakers" element={<PageShell fit><SpeakersPage /></PageShell>} />
                 <Route path="/sponsors" element={<PageShell fit><SponsorsPage /></PageShell>} />
                 <Route path="/team" element={<PageShell><TeamPage /></PageShell>} />
+                <Route path="/admin" element={<PageShell><AdminPage /></PageShell>} />
                 <Route path="/alumni" element={<PageShell><AlumniPage /></PageShell>} />
                 <Route path="/event" element={<PageShell><EventPage /></PageShell>} />
                 <Route path="/contact" element={<PageShell><ContactPage /></PageShell>} />

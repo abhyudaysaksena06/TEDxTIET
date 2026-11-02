@@ -57,6 +57,7 @@ const PAGE_TITLES: Record<string, string> = {
     "/team": "Team",
     "/speakers": "Speakers",
     "/sponsors": "Sponsors",
+    "/admin": "Admin",
     "/alumni": "Alumni",
     "/event": "Events",
     "/contact": "Contact",
